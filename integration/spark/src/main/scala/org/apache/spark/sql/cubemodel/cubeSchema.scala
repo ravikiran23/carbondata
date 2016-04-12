@@ -62,7 +62,7 @@ case class CubeModel(
                       factFieldsList: Option[FilterCols],
                       dimRelations: Seq[DimensionRelation],
                       simpleDimRelations: Seq[DimensionRelation],
-    highcardinalitydims:Option[Seq[String]],
+                      highcardinalitydims:Option[Seq[String]],
                       aggregation: Seq[Aggregation],
                       partitioner: Option[Partitioner])
 
