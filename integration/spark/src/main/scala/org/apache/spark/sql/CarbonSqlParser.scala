@@ -22,15 +22,26 @@
   */
 package org.apache.spark.sql
 
-import scala.language.implicitConversions
+import java.util.Locale
+
+import org.apache.hadoop.hive.ql.ErrorMsg
+import org.apache.hadoop.hive.ql.lib.Node
+import org.apache.hadoop.hive.ql.parse._
+import org.apache.hadoop.hive.serde.serdeConstants
+import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.analysis._
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.SqlLexical
-import org.apache.spark.sql.cubemodel.DimensionRelation
-import org.apache.spark.sql.catalyst._
-import org.apache.spark.sql.cubemodel._
-import org.apache.spark.Logging
-import org.apache.spark.sql.execution.datasources.{DDLException, DescribeCommand}
+import org.apache.spark.sql.catalyst.trees.CurrentOrigin
+import org.apache.spark.sql.catalyst.{SqlLexical, _}
+import org.apache.spark.sql.cubemodel.{DimensionRelation, _}
+import org.apache.spark.sql.execution.datasources.DescribeCommand
+import org.apache.spark.sql.hive.HiveQlWrapper
+import org.apache.spark.sql.hive.client.HiveColumn
+import org.apache.spark.sql.types._
+
+import scala.collection.JavaConversions._
+import scala.language.implicitConversions
+
 
 /**
   * Parser for All Carbon DDL, DML cases in Unified context
@@ -143,6 +154,9 @@ class CarbonSqlDDLParser()
   protected val EXISTS = Keyword("EXISTS")
   protected val DIMENSION = Keyword("DIMENSION")
 
+  protected val doubleQuotedString = "\"([^\"]+)\"".r
+  protected val singleQuotedString = "'([^']+)'".r
+
   protected val newReservedWords =
     this.getClass
       .getMethods
@@ -158,7 +172,7 @@ class CarbonSqlDDLParser()
 
   override protected lazy val start: Parser[LogicalPlan] =
     createCube | showCreateCube | loadManagement | createAggregateTable | describeTable |
-      suggestAggregates | showCube | showLoads | alterCube | showAllCubes
+      suggestAggregates | showCube | showLoads | alterCube | showAllCubes | hiveQl
 
   protected lazy val loadManagement: Parser[LogicalPlan] = loadData | dropCubeOrTable |
     deleteLoadsByID | deleteLoadsByDate | cleanFiles
@@ -245,6 +259,8 @@ class CarbonSqlDDLParser()
   protected lazy val createCubeOptionDef =
     ("(" ~> aggOptions <~ ")")
 
+  protected val escapedIdentifier = "`([^`]+)`".r
+
 
   protected lazy val showCreateCube: Parser[LogicalPlan] =
     SHOW ~> CREATE ~> CUBE ~> (IF ~> NOT ~> EXISTS).? ~ (ident <~ ".").? ~ ident ~
@@ -283,6 +299,136 @@ class CarbonSqlDDLParser()
           factFieldsList, dimRelations, simpleDimRelations,None, aggregation, partitioner))
       }
     }
+
+  protected lazy val hiveQl: Parser[LogicalPlan] =
+    restInput ^^ {
+
+      case statement =>
+       val node =  HiveQlWrapper.getAst(statement)
+        nodeToPlan(node)
+    }
+
+  var fields :Seq[Field] =  Seq[Field]()
+  var cubeComment:String = ""
+  var properties = Map[String, String]()
+
+
+  protected def nodeToPlan(node: Node): LogicalPlan = node match {
+    case Token("TOK_CREATETABLE", children)
+      if children.collect{ case t @ Token(_, _) => t}.nonEmpty =>
+      // Reference: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+DDL
+      /*val (
+        Some(tableNameParts) ::
+          _ /* likeTable */ ::
+          externalTable ::
+          Some(node) ::
+          allowExisting +:
+            ignores) =
+        getClauses(
+          Seq(
+            "TOK_TABNAME",
+            "TOK_LIKETABLE",
+            "EXTERNAL",
+            "TOK_QUERY",
+            "TOK_IFNOTEXISTS",
+            "TOK_TABLECOMMENT",
+            "TOK_TABCOLLIST",
+            "TOK_TABLEPARTCOLS", // Partitioned by
+            "TOK_TABLEBUCKETS", // Clustered by
+            "TOK_TABLESKEWED", // Skewed by
+            "TOK_TABLEROWFORMAT",
+            "TOK_TABLESERIALIZER",
+            "TOK_FILEFORMAT_GENERIC",
+            "TOK_TABLEFILEFORMAT", // User-provided InputFormat and OutputFormat
+            "TOK_STORAGEHANDLER", // Storage handler
+            "TOK_TABLELOCATION",
+            "TOK_TABLEPROPERTIES"),
+          children)
+      val (db, tableName) = extractDbNameTableName(tableNameParts)*/
+
+      children.collect {
+        case list @ Token("TOK_TABCOLLIST", _) =>
+          val cols = BaseSemanticAnalyzer.getColumns(list, true)
+          if (cols != null) {
+
+            cols.map { col =>
+              val columnName  = col.getName()
+              val dataType = Option(col.getType)
+              val comment = col.getComment
+              val name = Option(col.getName())
+              val f:Field = new Field(columnName,dataType,name,null, null,Some("columnar"))
+              fields ++= Seq(f)
+            }
+          }
+        case Token("TOK_TABLECOMMENT", child :: Nil) =>
+          cubeComment = BaseSemanticAnalyzer.unescapeSQLString(child.getText)
+          // TODO support the sql text
+//          tableDesc = tableDesc.copy(viewText = Option(comment))
+        case Token("TOK_TABLEPROPERTIES", list :: Nil) =>
+        /*  tableDesc = tableDesc.copy(properties = tableDesc.properties ++ getProperties(list))*/
+            properties ++= getProperties(list)
+
+        case _ => // Unsupport features
+      }
+
+  null
+  }
+
+  protected def extractDbNameTableName(tableNameParts: Node): (Option[String], String) = {
+    val (db, tableName) =
+      tableNameParts.getChildren.map { case Token(part, Nil) => cleanIdentifier(part) } match {
+        case Seq(tableOnly) => (None, tableOnly)
+        case Seq(databaseName, table) => (Some(databaseName), table)
+      }
+
+    (db, tableName)
+  }
+
+  protected def cleanIdentifier(ident: String): String = ident match {
+    case escapedIdentifier(i) => i
+    case plainIdent => plainIdent
+  }
+
+  protected def getClauses(clauseNames: Seq[String], nodeList: Seq[ASTNode]): Seq[Option[Node]] = {
+    var remainingNodes = nodeList
+    val clauses = clauseNames.map { clauseName =>
+      val (matches, nonMatches) = remainingNodes.partition(_.getText.toUpperCase == clauseName)
+      remainingNodes = nonMatches ++ (if (matches.nonEmpty) matches.tail else Nil)
+      matches.headOption
+    }
+
+    if (remainingNodes.nonEmpty) {
+      sys.error(
+        s"""Unhandled clauses:
+            |You are likely trying to use an unsupported Hive feature."""".stripMargin)
+    }
+    clauses
+  }
+
+  object Token {
+    /** @return matches of the form (tokenName, children). */
+    def unapply(t: Any): Option[(String, Seq[ASTNode])] = t match {
+      case t: ASTNode =>
+        CurrentOrigin.setPosition(t.getLine, t.getCharPositionInLine)
+        Some((t.getText,
+          Option(t.getChildren).map(_.toList).getOrElse(Nil).asInstanceOf[Seq[ASTNode]]))
+      case _ => None
+    }
+  }
+
+  protected def getProperties(node: Node): Seq[(String, String)] = node match {
+    case Token("TOK_TABLEPROPLIST", list) =>
+      list.map {
+        case Token("TOK_TABLEPROPERTY", Token(key, Nil) :: Token(value, Nil) :: Nil) =>
+          (unquoteString(key) -> unquoteString(value))
+      }
+  }
+
+  protected def unquoteString(str: String) = str match {
+    case singleQuotedString(s) => s
+    case doubleQuotedString(s) => s
+    case other => other
+  }
 
   protected lazy val createCube: Parser[LogicalPlan] =
     CREATE ~> CUBE ~> (IF ~> NOT ~> EXISTS).? ~ (ident <~ ".").? ~ ident ~
