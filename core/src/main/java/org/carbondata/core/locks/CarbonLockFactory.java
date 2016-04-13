@@ -64,11 +64,7 @@ public class CarbonLockFactory {
      * This method will set the zookeeper status whether zookeeper to be used for locking or not.
      */
     private static void updateZooKeeperLockingStatus() {
-        lockTypeConfigured = CarbonCommonConstants.LOCK_TYPE_DEFAULT;
-        String lockType = CarbonProperties.getInstance().getProperty(CarbonCommonConstants.LOCK_TYPE);
-        if (null != lockType) {
-            lockTypeConfigured = lockType;
-        }
+        lockTypeConfigured = CarbonProperties.getInstance().getProperty(CarbonCommonConstants.LOCK_TYPE, CarbonCommonConstants.LOCK_TYPE_DEFAULT);
 
     }
 
