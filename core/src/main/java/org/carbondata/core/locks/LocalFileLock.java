@@ -100,7 +100,7 @@ public class LocalFileLock extends AbstractCarbonLock {
         try {
             // create dir with cube name in tmp location.
             if (!FileFactory.isFileExist(tmpPath + File.separator + cubeName, FileFactory.getFileType(tmpPath))) {
-                FileFactory.createNewLockFile(tmpPath + File.separator + cubeName, FileFactory.getFileType(tmpPath));
+                FileFactory.mkdirs(tmpPath + File.separator + cubeName, FileFactory.getFileType(tmpPath));
             }
             if (!FileFactory.isFileExist(location, FileFactory.getFileType(location))) {
                 FileFactory.createNewLockFile(location, FileFactory.getFileType(location));
