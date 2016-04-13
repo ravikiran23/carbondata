@@ -1388,7 +1388,7 @@ public final class CarbonCommonConstants {
      * ZOOKEEPER_ENABLE_LOCK if this is set to true then zookeeper will be used to handle locking
      * mechanism of carbon
      */
-    public static final String LOCK_TYPE = "lock.type";
+    public static final String LOCK_TYPE = "carbon.lock.type";
 
     /**
      * ZOOKEEPER_ENABLE_DEFAULT the default value for zookeeper will be true for carbon
