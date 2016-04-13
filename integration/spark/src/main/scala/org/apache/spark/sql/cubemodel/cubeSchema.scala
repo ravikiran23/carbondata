@@ -97,6 +97,23 @@ case class CubeModel(
                       aggregation: Seq[Aggregation],
                       partitioner: Option[Partitioner])
 
+case class NewCubeModel(
+                      ifNotExistsSet: Boolean,
+                      //SchmemaNameOp is used to temporarily to hold schema and then set to var schemaName
+                      var schemaName: String,
+                      schemaNameOp: Option[String],
+                      cubeName: String,
+                      fields: Seq[Field],
+                      fromKeyword: String,
+                      withKeyword: String,
+                      source: Object,
+                      factFieldsList: Option[FilterCols],
+                      dimRelations: Seq[DimensionRelation],
+                      simpleDimRelations: Seq[DimensionRelation],
+                      highcardinalitydims:Option[Seq[String]],
+                      aggregation: Seq[Aggregation],
+                      partitioner: Option[Partitioner])
+
 
 case class Field(column: String, dataType: Option[String], name: Option[String], children : Option[List[Field]], parent: String = null,storeType: Option[String]=Some("columnar"))
 
@@ -119,6 +136,8 @@ case class Aggregation(msrName: String, aggType: String)
 case class AggregateTableAttributes(colName: String, aggType: String = null)
 
 case class Partitioner(partitionClass: String, partitionColumn: Array[String], partitionCount: Int, nodeList: Array[String])
+
+case class PartitionerField(partitionColumn: String, dataType: Option[String], columnComment:String)
 
 case class DimensionRelation(tableName: String, dimSource: Object, relation: Relation, includeKey: Option[String], cols: Option[Seq[String]])
 

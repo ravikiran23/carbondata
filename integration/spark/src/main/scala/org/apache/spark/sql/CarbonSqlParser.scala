@@ -311,7 +311,7 @@ class CarbonSqlDDLParser()
   var fields :Seq[Field] =  Seq[Field]()
   var cubeComment:String = ""
   var properties = Map[String, String]()
-
+  var partitionCols:Seq[PartitionerField] = Seq[PartitionerField]()
 
   protected def nodeToPlan(node: Node): LogicalPlan = node match {
     case Token("TOK_CREATETABLE", children)
@@ -364,6 +364,15 @@ class CarbonSqlDDLParser()
           cubeComment = BaseSemanticAnalyzer.unescapeSQLString(child.getText)
           // TODO support the sql text
 //          tableDesc = tableDesc.copy(viewText = Option(comment))
+        case Token("TOK_TABLEPARTCOLS", list @ Token("TOK_TABCOLLIST", _) :: Nil) =>
+          val cols = BaseSemanticAnalyzer.getColumns(list(0), false)
+          if (cols != null) {
+            cols.map { field =>
+              //  HiveColumn(field.getName, field.getType, field.getComment)
+              //  val partitionCol = new PartitionerField(field.getName, Option[field.getType], field.getComment)
+             // partitionCols ++= Seq(partitionCol)
+              }
+          }
         case Token("TOK_TABLEPROPERTIES", list :: Nil) =>
         /*  tableDesc = tableDesc.copy(properties = tableDesc.properties ++ getProperties(list))*/
             properties ++= getProperties(list)
