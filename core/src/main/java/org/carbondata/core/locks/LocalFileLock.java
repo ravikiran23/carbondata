@@ -61,11 +61,20 @@ public class LocalFileLock extends AbstractCarbonLock {
      */
     private FileLock fileLock;
 
+    public static String tmpPath;
+
+    private String cubeName;
+
     /**
      * LOGGER for  logging the messages.
      */
     private static final LogService LOGGER =
             LogServiceFactory.getLogService(LocalFileLock.class.getName());
+
+    static
+    {
+       tmpPath =  System.getProperty("java.io.tmpdir");
+    }
 
     /**
      *
@@ -74,9 +83,10 @@ public class LocalFileLock extends AbstractCarbonLock {
      */
     public LocalFileLock(String location, LockUsage lockUsage) {
         this.lockUsage = lockUsage;
-        this.location = location;
+        location = location.replace("\\", "/");
+        cubeName = location.substring(location.lastIndexOf('/')+1,location.length());
         if (this.lockUsage == LockUsage.METADATA_LOCK) {
-            this.location = location + File.separator + CarbonCommonConstants.METADATA_LOCK;
+            this.location = tmpPath + File.separator + cubeName + File.separator + CarbonCommonConstants.METADATA_LOCK;
         }
         initRetry();
     }
@@ -88,6 +98,10 @@ public class LocalFileLock extends AbstractCarbonLock {
     @Override
     public boolean lock() {
         try {
+            // create dir with cube name in tmp location.
+            if (!FileFactory.isFileExist(tmpPath + File.separator + cubeName, FileFactory.getFileType(tmpPath))) {
+                FileFactory.createNewLockFile(tmpPath + File.separator + cubeName, FileFactory.getFileType(tmpPath));
+            }
             if (!FileFactory.isFileExist(location, FileFactory.getFileType(location))) {
                 FileFactory.createNewLockFile(location, FileFactory.getFileType(location));
             }
