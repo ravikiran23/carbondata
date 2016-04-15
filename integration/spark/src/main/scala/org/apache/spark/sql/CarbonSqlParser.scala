@@ -22,12 +22,8 @@
   */
 package org.apache.spark.sql
 
-import java.util.Locale
-
-import org.apache.hadoop.hive.ql.ErrorMsg
 import org.apache.hadoop.hive.ql.lib.Node
 import org.apache.hadoop.hive.ql.parse._
-import org.apache.hadoop.hive.serde.serdeConstants
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.analysis._
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -36,8 +32,6 @@ import org.apache.spark.sql.catalyst.{SqlLexical, _}
 import org.apache.spark.sql.cubemodel.{DimensionRelation, _}
 import org.apache.spark.sql.execution.datasources.DescribeCommand
 import org.apache.spark.sql.hive.HiveQlWrapper
-import org.apache.spark.sql.hive.client.HiveColumn
-import org.apache.spark.sql.types._
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
@@ -304,18 +298,24 @@ class CarbonSqlDDLParser()
     restInput ^^ {
 
       case statement =>
-       val node =  HiveQlWrapper.getAst(statement)
-        nodeToPlan(node)
+          val node = HiveQlWrapper.getAst(statement)
+          nodeToPlan(node)
     }
 
   var fields :Seq[Field] =  Seq[Field]()
   var cubeComment:String = ""
-  var properties = Map[String, String]()
+  var tableProperties = Map[String, String]()
   var partitionCols:Seq[PartitionerField] = Seq[PartitionerField]()
+  var likeTableName:String = ""
+  var storedBy:String = ""
+  var ifNotExistPresent:Boolean = false
+  var dbName:Option[String] = None
+  var tableName:String = ""
+  /*var (db,tableName):(Option[String],String) = (None,"")*/
 
   protected def nodeToPlan(node: Node): LogicalPlan = node match {
-    case Token("TOK_CREATETABLE", children)
-      if children.collect{ case t @ Token(_, _) => t}.nonEmpty =>
+    case Token("TOK_CREATETABLE", children) =>
+     //   if children.collect { case t  => t } =>
       // Reference: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+DDL
       /*val (
         Some(tableNameParts) ::
@@ -360,6 +360,16 @@ class CarbonSqlDDLParser()
               fields ++= Seq(f)
             }
           }
+
+        case Token("TOK_IFNOTEXISTS", _) =>
+          ifNotExistPresent = true
+
+        case t @Token("TOK_TABNAME",_)  =>
+         var (db,tableName) = extractDbNameTableName(t)
+          dbName = db
+          this.tableName = tableName
+
+
         case Token("TOK_TABLECOMMENT", child :: Nil) =>
           cubeComment = BaseSemanticAnalyzer.unescapeSQLString(child.getText)
           // TODO support the sql text
@@ -367,20 +377,170 @@ class CarbonSqlDDLParser()
         case Token("TOK_TABLEPARTCOLS", list @ Token("TOK_TABCOLLIST", _) :: Nil) =>
           val cols = BaseSemanticAnalyzer.getColumns(list(0), false)
           if (cols != null) {
-            cols.map { field =>
+            cols.map { col =>
+              val columnName  = col.getName()
+              val dataType = Option(col.getType)
+              val comment = col.getComment
               //  HiveColumn(field.getName, field.getType, field.getComment)
-              //  val partitionCol = new PartitionerField(field.getName, Option[field.getType], field.getComment)
-             // partitionCols ++= Seq(partitionCol)
+                val partitionCol = new PartitionerField(columnName,dataType,comment)
+              partitionCols ++= Seq(partitionCol)
               }
           }
         case Token("TOK_TABLEPROPERTIES", list :: Nil) =>
         /*  tableDesc = tableDesc.copy(properties = tableDesc.properties ++ getProperties(list))*/
-            properties ++= getProperties(list)
+            tableProperties ++= getProperties(list)
+
+        case Token("TOK_LIKETABLE", child :: Nil) =>
+          likeTableName = child.getChild(0).getText()
+
+        case Token("TOK_STORAGEHANDLER", child :: Nil) =>
+          storedBy =  BaseSemanticAnalyzer.unescapeSQLString(child.getText)
 
         case _ => // Unsupport features
       }
 
-  null
+      val cubeModel:CubeModel = prepareCubeModel(ifNotExistPresent,dbName,tableName,fields,partitionCols,tableProperties)
+
+      CreateCube(cubeModel)
+
+  }
+
+  /*CubeModel(exists.isDefined,
+    schemaName.getOrElse("default"), schemaName, cubeName, dimCols.map(f => normalizeType(f)).map(f => addParent(f)),
+    msrCols.map(f => normalizeType(f)), "", withKeyword, "",
+    None, Seq(), simpleDimRelations, highCard, aggregation,partitioner)*/
+
+  protected def prepareCubeModel(ifNotExistPresent: Boolean, dbName: Option[String]
+  , tableName: String, fields: Seq[Field], partitionCols: Seq[PartitionerField], tableProperties: Map[String, String]): CubeModel
+  = {
+    val dims: Seq[Field] = extractDimColsFromFields(fields, tableProperties)
+    val msrs: Seq[Field] = extractMsrColsFromFields(fields, tableProperties)
+
+    val partitioner: Option[Partitioner] = getPartitionerObject(partitionCols, tableProperties)
+
+    CubeModel(ifNotExistPresent,
+      dbName.getOrElse("default"), dbName, tableName, dims,
+      msrs, "",null, "",
+      None, Seq(), null, null, null,partitioner)
+  }
+
+  protected def getPartitionerObject(partitionCols:Seq[PartitionerField],tableProperties:Map[String, String]): Option[Partitioner] = {
+
+    var partitionClass:String = "org.carbon.partition"
+    var partitionCount:Int = 1
+    var partitionColNames : Array[String] = Array[String]()
+    if(None != tableProperties.get("PARTITIONCLASS")) {
+      partitionClass =  tableProperties.get("PARTITIONCLASS").get
+    }
+
+    if(None != tableProperties.get("PARTITIONCOUNT")) {
+      try {
+        partitionCount =  tableProperties.get("PARTITIONCOUNT").get.toInt
+      } catch {
+        case e: Exception =>  // no need to do anything.
+      }
+    }
+
+    partitionCols.foreach(col =>
+      partitionColNames :+= col.partitionColumn
+    )
+
+    // this means user has given partition cols list
+    if(!partitionColNames.isEmpty)
+      {
+        return Option(Partitioner(partitionClass,partitionColNames,partitionCount,null))
+      }
+    // if partition cols are not given then no need to do partition.
+    None
+  }
+
+  protected def extractDimColsFromFields(fields: Seq[Field], tableProperties: Map[String, String]): Seq[Field] = {
+
+    var dimFields: Seq[Field] = Seq[Field]()
+    var splittedCols:Array[String] = Array[String]()
+
+    // check any column need to be excluded
+    if (None != tableProperties.get("DICTIONARY_EXCLUDE")) {
+      val dicExcludeCols: String = tableProperties.get("DICTIONARY_EXCLUDE").get
+      splittedCols = dicExcludeCols.split(',')
+    }
+
+    // by default consider all String cols as dims and exclude the dictionary excluded colms.
+    fields.foreach(field => {
+      if(field.dataType.get.equalsIgnoreCase("string"))
+        {
+          if(!splittedCols.isEmpty) {
+            splittedCols.foreach(excludedCol =>
+              if (!field.column.equalsIgnoreCase(excludedCol)) {
+                dimFields :+= field
+              }
+            )
+          }
+          else {
+            dimFields :+= field
+          }
+        }
+    })
+
+
+    // include the other columns into dims
+    if (None != tableProperties.get("DICTIONARY_INCLUDE")) {
+      val dicIncludeCols: String = tableProperties.get("DICTIONARY_INCLUDE").get
+      val splittedCols = dicIncludeCols.split(',')
+      fields.foreach(field => {
+        splittedCols.foreach(col => {
+          if (field.column.equalsIgnoreCase(col)) {
+            dimFields :+= field
+          }
+        })
+      })
+    }
+
+    dimFields
+  }
+
+
+  protected def extractMsrColsFromFields(fields: Seq[Field], tableProperties: Map[String, String]): Seq[Field] = {
+    var msrFields: Seq[Field] = Seq[Field]()
+    var splittedCols:Array[String] = Array[String]()
+
+    // check any column need to be excluded
+    if (None != tableProperties.get("DICTIONARY_INCLUDE")) {
+      val dicIncludeCols: String = tableProperties.get("DICTIONARY_INCLUDE").get
+      splittedCols = dicIncludeCols.split(',')
+    }
+
+    // by default consider all String cols as dims.
+    fields.foreach(field => {
+      if(!field.dataType.get.equalsIgnoreCase("string"))
+      {
+        if(!splittedCols.isEmpty) {
+          splittedCols.foreach(dicIncludedCols =>
+            if (!field.column.equalsIgnoreCase(dicIncludedCols)) {
+              msrFields :+= field
+            }
+          )
+        }
+        else {
+          msrFields :+= field
+        }
+      }
+    })
+
+    // include the other columns into measures.
+    if (None != tableProperties.get("DICTIONARY_EXCLUDE")) {
+      val dicExcludeColsStr: String = tableProperties.get("DICTIONARY_EXCLUDE").get
+      val dicExcludedCols = dicExcludeColsStr.split(',')
+      fields.foreach(field => {
+        dicExcludedCols.foreach(col => {
+          if (field.column.equalsIgnoreCase(col)) {
+            msrFields :+= field
+          }
+        })
+      })
+    }
+
+    msrFields
   }
 
   protected def extractDbNameTableName(tableNameParts: Node): (Option[String], String) = {
