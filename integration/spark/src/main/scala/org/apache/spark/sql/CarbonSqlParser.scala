@@ -168,7 +168,7 @@ class CarbonSqlDDLParser()
 
   override protected lazy val start: Parser[LogicalPlan] =
     createCube | showCreateCube | loadManagement | createAggregateTable | describeTable |
-      suggestAggregates | showCube | showLoads | alterCube | showAllCubes | hiveQl
+      suggestAggregates | showCube | showLoads | alterCube | showAllCubes | createTable
 
   protected lazy val loadManagement: Parser[LogicalPlan] = loadData | dropCubeOrTable |
     deleteLoadsByID | deleteLoadsByDate | cleanFiles
@@ -245,11 +245,11 @@ class CarbonSqlDDLParser()
       ((FACT ~> FROM ~ (dbTableIdentifier | stringLit) ~ (colsFilter).? ~ ("," ~> DIMENSION ~> FROM ~> dimRelations).?).?) ~
       (WITH ~ (simpleDimRelations)).?)
 
-      protected lazy val aggOptionsForShowCreate = 
+      protected lazy val aggOptionsForShowCreate =
           (aggregation).? ~ (",".? ~> partitioner).?
   protected lazy val aggOptions =
     (noDictionaryDims).? ~ (",".? ~> aggregation).? ~ (",".? ~> partitioner).?
-    protected lazy val showcreateCubeOptionDef = 
+    protected lazy val showcreateCubeOptionDef =
         ("(" ~> aggOptionsForShowCreate <~ ")")
 
   protected lazy val createCubeOptionDef =
@@ -261,7 +261,7 @@ class CarbonSqlDDLParser()
   protected lazy val showCreateCube: Parser[LogicalPlan] =
     SHOW ~> CREATE ~> CUBE ~> (IF ~> NOT ~> EXISTS).? ~ (ident <~ ".").? ~ ident ~
       showCubeDefinition ~
-    (OPTIONS ~> showcreateCubeOptionDef).? <~ (";").? ^^ 
+    (OPTIONS ~> showcreateCubeOptionDef).? <~ (";").? ^^
     {
       case exists ~ schemaName ~ cubeName ~ cubeDefinition ~ options => {
         val (dimCols, msrCols, fromKeyword, withKeyword, source, factFieldsList, dimRelations, simpleDimRelations) = cubeDefinition match {
@@ -296,12 +296,22 @@ class CarbonSqlDDLParser()
       }
     }
 
-  protected lazy val hiveQl: Parser[LogicalPlan] =
+  /**
+    * For handling the create table DDl systax compatible to Hive syntax
+    */
+  protected lazy val createTable: Parser[LogicalPlan] =
     restInput ^^ {
 
-      case statement =>
+      case statement => {
+        try {
+          //DDl will be parsed and we get the AST tree from the HiveQl
           val node = HiveQlWrapper.getAst(statement)
+          // processing the AST tree
           nodeToPlan(node)
+        } catch {
+          case e: Exception => sys.error("Parsing error")// no need to do anything.
+        }
+      }
     }
 
   var fields :Seq[Field] =  Seq[Field]()
@@ -315,10 +325,18 @@ class CarbonSqlDDLParser()
   var tableName:String = ""
   /*var (db,tableName):(Option[String],String) = (None,"")*/
 
+  /**
+    * This function will traverse the tree and logical plan will be formed using that.
+    *
+    * @param node
+    * @return LogicalPlan
+    */
   protected def nodeToPlan(node: Node): LogicalPlan = node match {
+      // if create table taken is found then only we will handle.
     case Token("TOK_CREATETABLE", children) =>
 
       children.collect {
+        // collecting all the field  list
         case list @ Token("TOK_TABCOLLIST", _) =>
           val cols = BaseSemanticAnalyzer.getColumns(list, true)
           if (cols != null) {
@@ -341,11 +359,9 @@ class CarbonSqlDDLParser()
           dbName = db
           this.tableName = tableName
 
-
         case Token("TOK_TABLECOMMENT", child :: Nil) =>
           cubeComment = BaseSemanticAnalyzer.unescapeSQLString(child.getText)
-          // TODO support the sql text
-//          tableDesc = tableDesc.copy(viewText = Option(comment))
+
         case Token("TOK_TABLEPARTCOLS", list @ Token("TOK_TABCOLLIST", _) :: Nil) =>
           val cols = BaseSemanticAnalyzer.getColumns(list(0), false)
           if (cols != null) {
@@ -359,7 +375,6 @@ class CarbonSqlDDLParser()
               }
           }
         case Token("TOK_TABLEPROPERTIES", list :: Nil) =>
-        /*  tableDesc = tableDesc.copy(properties = tableDesc.properties ++ getProperties(list))*/
             tableProperties ++= getProperties(list)
 
         case Token("TOK_LIKETABLE", child :: Nil) =>
@@ -376,8 +391,10 @@ class CarbonSqlDDLParser()
             sys.error("Not a carbon Format request")
         }
 
+      // prepare cube model of the collected tokens
       val cubeModel:CubeModel = prepareCubeModel(ifNotExistPresent,dbName,tableName,fields,partitionCols,tableProperties)
 
+      // get logical plan.
       CreateCube(cubeModel)
 
   }
@@ -391,10 +408,10 @@ class CarbonSqlDDLParser()
   , tableName: String, fields: Seq[Field], partitionCols: Seq[PartitionerField], tableProperties: Map[String, String]): CubeModel
   = {
     
-   
+   // get column groups configuration from table properties.
     val groupCols:Seq[String] = updateColumnGroupsInField(tableProperties,fields)
 
-    var (dims:Seq[Field],noDictionaryDims:Seq[String]) = extractDimColsFromFields(fields, tableProperties)
+    var (dims:Seq[Field],noDictionaryDims:Seq[String]) = extractDimColsAndNoDictionaryFields(fields, tableProperties)
     val msrs: Seq[Field] = extractMsrColsFromFields(fields, tableProperties)
 
 
@@ -406,19 +423,29 @@ class CarbonSqlDDLParser()
       None, Seq(), null, Option(noDictionaryDims), null,partitioner,groupCols)
   }
 
+  /**
+    * Extract the column groups configuration from table properties.
+    * Based on this Row groups of fields will be determined.
+ *
+    * @param tableProperties
+    * @param fields
+    * @return
+    */
   protected def updateColumnGroupsInField(tableProperties: Map[String, String], fields: Seq[Field]): Seq[String] = {
     if (None != tableProperties.get("COLUMN_GROUPS")) {
 
       var splittedColGrps: Seq[String] = Seq[String]()
       val nonSplitCols: String = tableProperties.get("COLUMN_GROUPS").get
 
-
+      // row groups will be specified in table properties like -> "(col1,col2),(col3,col4)"
+      // here first splitting the value by () . so that the above will be splitted into 2 strings. [col1,col2] [col3,col4]
       val m: Matcher = Pattern.compile("\\(([^)]+)\\)").matcher(nonSplitCols)
       while (m.find()) {
           val oneGroup : String = m.group(1)
 
         splittedColGrps :+= oneGroup
       }
+      // This will  be furthur handled.
       splittedColGrps
     }
     else {
@@ -426,6 +453,12 @@ class CarbonSqlDDLParser()
     }
   }
 
+  /**
+    * For getting the partitioner Object
+    * @param partitionCols
+    * @param tableProperties
+    * @return
+    */
   protected def getPartitionerObject(partitionCols:Seq[PartitionerField],tableProperties:Map[String, String]): Option[Partitioner] = {
 
     // by default setting partition class empty. later in cube schema it is setting to default value.
@@ -457,7 +490,14 @@ class CarbonSqlDDLParser()
     None
   }
 
-  protected def extractDimColsFromFields(fields: Seq[Field], tableProperties: Map[String, String]): (Seq[Field],Seq[String]) = {
+  /**
+    * This will extract the Dimensions and NoDictionary Dimensions fields.
+    * By default all string cols are dimensions.
+    * @param fields
+    * @param tableProperties
+    * @return
+    */
+  protected def extractDimColsAndNoDictionaryFields(fields: Seq[Field], tableProperties: Map[String, String]): (Seq[Field],Seq[String]) = {
 
     var dimFields: Set[Field] = Set[Field]()
     var splittedCols:Array[String] = Array[String]()
@@ -506,6 +546,12 @@ class CarbonSqlDDLParser()
   }
 
 
+  /**
+    * Extract the Measure Cols fields. By default all non string cols will be measures.
+    * @param fields
+    * @param tableProperties
+    * @return
+    */
   protected def extractMsrColsFromFields(fields: Seq[Field], tableProperties: Map[String, String]): Seq[Field] = {
     var msrFields: Seq[Field] = Seq[Field]()
     var splittedCols:Array[String] = Array[String]()
@@ -533,22 +579,14 @@ class CarbonSqlDDLParser()
       }
     })
 
-    /*// include the other columns into measures.
-    if (None != tableProperties.get("DICTIONARY_EXCLUDE")) {
-      val dicExcludeColsStr: String = tableProperties.get("DICTIONARY_EXCLUDE").get
-      val dicExcludedCols = dicExcludeColsStr.split(',')
-      fields.foreach(field => {
-        dicExcludedCols.foreach(col => {
-          if (field.column.equalsIgnoreCase(col)) {
-            msrFields :+= field
-          }
-        })
-      })
-    }*/
-
     msrFields
   }
 
+  /**
+    * Extract the DbName and table name.
+    * @param tableNameParts
+    * @return
+    */
   protected def extractDbNameTableName(tableNameParts: Node): (Option[String], String) = {
     val (db, tableName) =
       tableNameParts.getChildren.map { case Token(part, Nil) => cleanIdentifier(part) } match {
@@ -575,7 +613,7 @@ class CarbonSqlDDLParser()
     if (remainingNodes.nonEmpty) {
       sys.error(
         s"""Unhandled clauses:
-            |You are likely trying to use an unsupported Hive feature."""".stripMargin)
+            |You are likely trying to use an unsupported carbon feature."""".stripMargin)
     }
     clauses
   }
@@ -591,6 +629,11 @@ class CarbonSqlDDLParser()
     }
   }
 
+  /**
+    * Extract the table properties token
+    * @param node
+    * @return
+    */
   protected def getProperties(node: Node): Seq[(String, String)] = node match {
     case Token("TOK_TABLEPROPLIST", list) =>
       list.map {
