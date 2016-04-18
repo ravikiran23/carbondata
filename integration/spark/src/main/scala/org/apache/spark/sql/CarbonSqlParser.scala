@@ -409,7 +409,7 @@ class CarbonSqlDDLParser()
   = {
     
    // get column groups configuration from table properties.
-    val groupCols:Seq[String] = updateColumnGroupsInField(tableProperties,fields)
+    val groupCols:Seq[String] = updateColumnGroupsInField(tableProperties)
 
     var (dims:Seq[Field],noDictionaryDims:Seq[String]) = extractDimColsAndNoDictionaryFields(fields, tableProperties)
     val msrs: Seq[Field] = extractMsrColsFromFields(fields, tableProperties)
@@ -431,7 +431,7 @@ class CarbonSqlDDLParser()
     * @param fields
     * @return
     */
-  protected def updateColumnGroupsInField(tableProperties: Map[String, String], fields: Seq[Field]): Seq[String] = {
+  protected def updateColumnGroupsInField(tableProperties: Map[String, String]): Seq[String] = {
     if (None != tableProperties.get("COLUMN_GROUPS")) {
 
       var splittedColGrps: Seq[String] = Seq[String]()

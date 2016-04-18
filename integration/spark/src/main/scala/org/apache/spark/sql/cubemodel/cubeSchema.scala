@@ -302,7 +302,7 @@ class CubeNewProcessor(cm: CubeModel, sqlContext: SQLContext) {
 //    }
 
     val partitioner = cm.partitioner match {
-      case Some(part: Partitioner) =>
+      case Some( part: Partitioner) =>
         var definedpartCols = part.partitionColumn
         val columnBuffer = new ArrayBuffer[String]
         part.partitionColumn.foreach { col =>
@@ -314,10 +314,14 @@ class CubeNewProcessor(cm: CubeModel, sqlContext: SQLContext) {
           }
         }
 
-
         //Special Case, where Partition count alone is sent to Carbon for dataloading
-        if (part.partitionClass.isEmpty() && part.partitionColumn(0).isEmpty()) {
-          Partitioner("org.carbondata.integration.spark.partition.api.impl.SampleDataPartitionerImpl", Array(""), part.partitionCount, null)
+        if (part.partitionClass.isEmpty()) {
+          if (part.partitionColumn(0).isEmpty()) {
+            Partitioner("org.carbondata.integration.spark.partition.api.impl.SampleDataPartitionerImpl", Array(""), part.partitionCount, null)
+          }
+          else {// case where partition cols are set and partition class is not set. so setting the default value.
+            Partitioner("org.carbondata.integration.spark.partition.api.impl.SampleDataPartitionerImpl",part.partitionColumn, part.partitionCount, null)
+          }
         }
         else if (definedpartCols.size > 0) {
           val msg = definedpartCols.mkString(", ")
