@@ -4,7 +4,7 @@ import org.apache.spark.sql.common.util.QueryTest
 import org.apache.spark.sql.cubemodel.Field
 
 /**
-  * Created by Administrator on 4/18/2016.
+  * Stub class for calling the CarbonSqlParser
   */
 private class TestCarbonSqlParserStub extends CarbonSqlDDLParser {
 
@@ -28,6 +28,9 @@ private class TestCarbonSqlParserStub extends CarbonSqlDDLParser {
 
 }
 
+/**
+  * Test class to test Carbon Sql Parser
+  */
 class TestCarbonSqlParser extends QueryTest {
 
   // Testing the column group Splitting method.
@@ -51,7 +54,7 @@ class TestCarbonSqlParser extends QueryTest {
     assert(null == colgrps)
   }
 
-  // Testing the column group Splitting method with empty table properties so null will be returned.
+  // Testing the extracting of Dims and no Dictionary
   test("Test-extractDimColsAndNoDictionaryFields") {
     val tableProperties = Map("DICTIONARY_EXCLUDE" -> "col2","DICTIONARY_INCLUDE" -> "col4")
     var fields: Seq[Field] = Seq[Field]()
@@ -76,6 +79,31 @@ class TestCarbonSqlParser extends QueryTest {
     assert(dimCols.lift(1).get.column.equalsIgnoreCase("col4"))
 
     assert(noDictionary.lift(0).get.equalsIgnoreCase("col2"))
+  }
+
+
+  // Testing the extracting of measures
+  test("Test-extractMsrColsFromFields") {
+    val tableProperties = Map("DICTIONARY_EXCLUDE" -> "col2","DICTIONARY_INCLUDE" -> "col4")
+    var fields: Seq[Field] = Seq[Field]()
+
+    var col1 = Field("col1", Option("Int"), Option("col1"),None, null,Some("columnar"))
+    var col2 = Field("col2", Option("String"), Option("col2"),None, null,Some("columnar"))
+    var col3 = Field("col3", Option("String"), Option("col3"),None, null,Some("columnar"))
+    var col4 = Field("col4", Option("Int"), Option("col4"),None, null,Some("columnar"))
+
+    fields :+= col1
+    fields :+= col2
+    fields :+= col3
+    fields :+= col4
+
+    val stub = new TestCarbonSqlParserStub()
+    var msrCols = stub.extractMsrColsFromFieldsTest(fields,tableProperties)
+
+    // testing col
+
+    assert(msrCols.lift(0).get.column.equalsIgnoreCase("col1"))
+
   }
 
 
