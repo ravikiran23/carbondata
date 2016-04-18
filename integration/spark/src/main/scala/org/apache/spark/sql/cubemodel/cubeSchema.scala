@@ -20,20 +20,21 @@
 package org.apache.spark.sql.cubemodel
 
 import java.text.SimpleDateFormat
+import java.util.UUID
 
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference}
 import org.apache.spark.sql.execution.{RunnableCommand, SparkPlan}
 import org.apache.spark.sql.hive.{CarbonMetastoreCatalog, HiveContext}
 import org.apache.spark.sql.types.TimestampType
-import org.apache.spark.sql._
 import org.carbondata.common.logging.LogServiceFactory
-import org.carbondata.core.carbon.{CarbonDataLoadSchema, CarbonDef}
 import org.carbondata.core.carbon.CarbonDef.{AggTable, CubeDimension}
 import org.carbondata.core.carbon.metadata.datatype.DataType
 import org.carbondata.core.carbon.metadata.encoder.Encoding
-import org.carbondata.core.carbon.metadata.schema.{SchemaEvolution, SchemaEvolutionEntry}
-import org.carbondata.core.carbon.metadata.schema.table.{TableInfo, TableSchema}
 import org.carbondata.core.carbon.metadata.schema.table.column.ColumnSchema
+import org.carbondata.core.carbon.metadata.schema.table.{TableInfo, TableSchema}
+import org.carbondata.core.carbon.metadata.schema.{SchemaEvolution, SchemaEvolutionEntry}
+import org.carbondata.core.carbon.{CarbonDataLoadSchema, CarbonDef}
 import org.carbondata.core.constants.CarbonCommonConstants
 import org.carbondata.core.datastorage.store.impl.FileFactory
 import org.carbondata.core.locks.{CarbonLockFactory, LockUsage}
@@ -43,14 +44,13 @@ import org.carbondata.integration.spark.load.{CarbonLoadModel, CarbonLoaderUtil,
 import org.carbondata.integration.spark.partition.api.impl.QueryPartitionHelper
 import org.carbondata.integration.spark.rdd.CarbonDataRDDFactory
 import org.carbondata.integration.spark.util.{CarbonScalaUtil, CarbonSparkInterFaceLogEvent, GlobalDictionaryUtil}
-import org.carbondata.processing.suggest.autoagg.{AutoAggSuggestionFactory, AutoAggSuggestionService}
 import org.carbondata.processing.suggest.autoagg.model.Request
 import org.carbondata.processing.suggest.autoagg.util.CommonUtil
+import org.carbondata.processing.suggest.autoagg.{AutoAggSuggestionFactory, AutoAggSuggestionService}
 import org.carbondata.processing.suggest.datastats.model.LoadModel
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConversions.{asScalaBuffer, seqAsJavaList, _}
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
-import scala.collection.JavaConversions.{asScalaBuffer, asScalaSet, seqAsJavaList}
 import scala.language.implicitConversions
 
 case class CubeModel(
@@ -153,7 +153,7 @@ class CubeNewProcessor(cm: CubeModel, sqlContext: SQLContext) {
     val columnSchema = new ColumnSchema()
     columnSchema.setDataType(dataType)
     columnSchema.setColumnName(colName)
-    columnSchema.setColumnUniqueId(index)
+    columnSchema.setColumnUniqueId(UUID.randomUUID().toString())
     columnSchema.setColumnar(isCol)
     val encoderSet = new java.util.HashSet(encoders)
     columnSchema.setEncodintList(encoderSet)

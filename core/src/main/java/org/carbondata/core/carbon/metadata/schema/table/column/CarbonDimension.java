@@ -120,7 +120,7 @@ public class CarbonDimension implements Serializable {
     /**
      * @return column unique id
      */
-    public int getColumnId() {
+    public String getColumnId() {
         return columnSchema.getColumnUniqueId();
     }
 
