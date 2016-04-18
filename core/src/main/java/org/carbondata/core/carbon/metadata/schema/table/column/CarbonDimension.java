@@ -248,4 +248,8 @@ public class CarbonDimension implements Serializable {
         }
         return true;
     }
+    
+    public boolean hasEncoding(Encoding encoding){
+    	return columnSchema.getEncodingList().contains(encoding);
+    }
 }
