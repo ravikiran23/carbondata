@@ -25,6 +25,7 @@ import java.util.*;
 import org.carbondata.common.logging.LogService;
 import org.carbondata.common.logging.LogServiceFactory;
 import org.carbondata.core.carbon.CarbonDataLoadSchema;
+import org.carbondata.core.carbon.metadata.encoder.Encoding;
 import org.carbondata.core.carbon.metadata.schema.table.CarbonTable;
 import org.carbondata.core.carbon.metadata.schema.table.column.CarbonDimension;
 import org.carbondata.core.carbon.metadata.schema.table.column.CarbonMeasure;
@@ -69,6 +70,9 @@ import org.pentaho.di.trans.steps.hadoopfileinput.HadoopFileInputMeta;
 import org.pentaho.di.trans.steps.selectvalues.SelectMetadataChange;
 import org.pentaho.di.trans.steps.selectvalues.SelectValuesMeta;
 import org.pentaho.di.trans.steps.tableinput.TableInputMeta;
+
+import java.io.*;
+import java.util.*;
 
 public class GraphGenerator {
 
@@ -1602,6 +1606,9 @@ public class GraphGenerator {
         sortRowsMeta.setMeasureCount(graphConfiguration.getMeasureCount() + "");
         sortRowsMeta.setNoDictionaryDims(graphConfiguration.getNoDictionaryDims());
         sortRowsMeta.setMeasureDataType(graphConfiguration.getMeasureDataTypeInfo());
+        sortRowsMeta.setNoDictionaryDimsMapping(RemoveDictionaryUtil.convertBooleanArrToString
+                (graphConfiguration.getIsNoDictionaryDimMapping()));
+
         StepMeta sortRowsStep = new StepMeta(
                 GraphGeneratorConstants.SORT_KEY_AND_GROUPBY + graphConfiguration.getTableName(),
                 (StepMetaInterface) sortRowsMeta);
@@ -1629,6 +1636,9 @@ public class GraphGenerator {
         graphConfiguration.setActualDims(CarbonSchemaParser.getCubeDimensions(dimensions, carbonDataLoadSchema));
         graphConfiguration.setComplexTypeString(
                 CarbonSchemaParser.getLevelDataTypeAndParentMapString(dimensions));
+
+        prepareNoDictionaryMapping(dimensions,graphConfiguration);
+
         String factTableName = carbonDataLoadSchema.getCarbonTable().getFactTableName();
         graphConfiguration.setTableName(factTableName);
         StringBuilder dimString = new StringBuilder();
@@ -1897,5 +1907,32 @@ public class GraphGenerator {
             }
         }
         return count;
+    }
+
+    /**
+     *  Preparing the boolean [] to map whether the dimension is no Dictionary or not.
+     * @param dims
+     * @param graphConfig
+     */
+    private void prepareNoDictionaryMapping(List<CarbonDimension> dims, GraphConfigurationInfo graphConfig) {
+        // boolean[] NoDictionaryMapping = new boolean[dims.size()];
+        List<Boolean> noDictionaryMapping = new ArrayList<Boolean>();
+        int index = 0;
+        for (CarbonDimension dimension : dims) {
+            // for  complex type need to break the loop
+            if (dimension.getNumberOfChild() > 0) {
+                break;
+            }
+
+            if (!dimension.getEncoder().contains(Encoding.DICTIONARY)) {
+                noDictionaryMapping.add(true);
+                //NoDictionaryMapping[index] = true;
+            } else {
+                noDictionaryMapping.add(false);
+            }
+            index++;
+        }
+
+        graphConfig.setIsNoDictionaryDimMapping(noDictionaryMapping.toArray(new Boolean[noDictionaryMapping.size()]));
     }
 }

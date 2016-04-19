@@ -80,6 +80,8 @@ public class SortKeyStep extends BaseStep {
      */
     private SortObserver observer;
 
+    private Boolean[] noDictionaryColMaping;
+
     /**
      * CarbonSortKeyAndGroupByStep Constructor
      *
@@ -170,11 +172,13 @@ public class SortKeyStep extends BaseStep {
             this.meta.setNoDictionaryCount(
                     RemoveDictionaryUtil.extractNoDictionaryCount(meta.getNoDictionaryDims()));
 
+            this.noDictionaryColMaping = RemoveDictionaryUtil.convertStringToBooleanArr(meta.getNoDictionaryDimsMapping());
+
             this.sortDataRows = new SortDataRows(meta.getTabelName(),
                     meta.getDimensionCount() - meta.getComplexDimensionCount(),
                     meta.getComplexDimensionCount(), meta.getMeasureCount(), this.observer,
                     meta.getCurrentRestructNumber(), meta.getNoDictionaryCount(), msrdataTypes,
-                    meta.getPartitionID());
+                    meta.getPartitionID(), this.noDictionaryColMaping);
             try {
                 // initialize sort
                 this.sortDataRows.initialize(meta.getSchemaName(), meta.getCubeName());

@@ -191,6 +191,8 @@ public class GraphConfigurationInfo {
     private int currentRestructNumber;
     private String levelAnddataType;
 
+    private Boolean[] isNoDictionaryDimMapping;
+
     public String getDimensionStoreTypeString() {
         return dimensionStoreType;
     }
@@ -957,4 +959,13 @@ public class GraphConfigurationInfo {
     public void setNoDictionaryDims(String noDictionaryDims) {
         this.noDictionaryDims = noDictionaryDims;
     }
+
+    public Boolean[] getIsNoDictionaryDimMapping() {
+        return isNoDictionaryDimMapping;
+    }
+
+    public void setIsNoDictionaryDimMapping(Boolean[] isNoDictionaryDimMapping) {
+        this.isNoDictionaryDimMapping = isNoDictionaryDimMapping;
+    }
+
 }

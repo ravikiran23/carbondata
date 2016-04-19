@@ -27,6 +27,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference}
 import org.apache.spark.sql.execution.{RunnableCommand, SparkPlan}
 import org.apache.spark.sql.hive.{CarbonMetastoreCatalog, HiveContext}
 import org.apache.spark.sql.types.TimestampType
+import org.apache.spark.sql._
 import org.carbondata.common.logging.LogServiceFactory
 import org.carbondata.core.carbon.CarbonDef.{AggTable, CubeDimension}
 import org.carbondata.core.carbon.metadata.datatype.DataType
@@ -221,7 +222,7 @@ class CubeNewProcessor(cm: tableModel, sqlContext: SQLContext) {
     val measures = scala.collection.mutable.ListBuffer[ColumnSchema]()
     for (column <- allColumns) {
       if (highCardinalityDims.contains(column.getColumnName)) {
-        highCardDims.add(column)
+        newOrderedDims.add(column)
       }
       else if (column.getDataType == DataType.ARRAY || column.getDataType == DataType.STRUCT
         || column.getColumnName.contains(".")) {
@@ -246,7 +247,7 @@ class CubeNewProcessor(cm: tableModel, sqlContext: SQLContext) {
       measures.add(measureColumn)
     }
 
-    newOrderedDims = newOrderedDims ++ highCardDims ++ complexDims ++ measures
+    newOrderedDims = newOrderedDims ++ complexDims ++ measures
     //Update measures with aggregators if specified.
     //Not required in new schema, as its a column in table.
     //    val msrsUpdatedWithAggregators = cm.aggregation match {

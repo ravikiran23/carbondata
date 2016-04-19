@@ -19,16 +19,6 @@
 
 package org.carbondata.processing.sortandgroupby.sortData;
 
-import java.io.*;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import org.carbondata.common.logging.LogService;
 import org.carbondata.common.logging.LogServiceFactory;
 import org.carbondata.core.carbon.CarbonTableIdentifier;
@@ -44,6 +34,16 @@ import org.carbondata.processing.sortandgroupby.exception.CarbonSortKeyAndGroupB
 import org.carbondata.processing.util.CarbonDataProcessorLogEvent;
 import org.carbondata.processing.util.CarbonDataProcessorUtil;
 import org.carbondata.processing.util.RemoveDictionaryUtil;
+
+import java.io.*;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class SortDataRows {
     /**
@@ -170,6 +170,8 @@ public class SortDataRows {
 
     private char[] aggType;
 
+    private Boolean[]  noDictionaryColMaping;
+
     /**
      * To know how many columns are of high cardinality.
      */
@@ -181,7 +183,7 @@ public class SortDataRows {
 
     public SortDataRows(String tabelName, int dimColCount, int complexDimColCount,
             int measureColCount, SortObserver observer, int currentRestructNum,
-            int noDictionaryCount, String[] measureDatatype,String partitionID) {
+            int noDictionaryCount, String[] measureDatatype,String partitionID, Boolean[] noDictionaryColMaping) {
         // set table name
         this.tableName = tabelName;
         this.partitionID = partitionID;
@@ -204,6 +206,8 @@ public class SortDataRows {
 
         this.measureDatatype = measureDatatype;
         this.aggType = new char[measureColCount];
+
+        this.noDictionaryColMaping = noDictionaryColMaping;
     }
 
     /**
@@ -379,7 +383,13 @@ public class SortDataRows {
             toSort = new Object[entryCount][];
             System.arraycopy(recordHolderList, 0, toSort, 0, entryCount);
 
-            Arrays.sort(toSort, new RowComparator(this.dimColCount));
+            if (noDictionaryCount > 0) {
+                Arrays.sort(toSort, new RowComparator(noDictionaryColMaping, noDictionaryCount));
+            } else {
+
+                Arrays.sort(toSort, new RowComparatorForNormalDims(this.dimColCount));
+            }
+
             recordHolderList = toSort;
 
             // create new file
@@ -409,8 +419,12 @@ public class SortDataRows {
                 String newFileName = "";
                 File finalFile = null;
                 try {
-                    // sort the record holder list
-                    Arrays.sort(recordHolderListLocal, new RowComparator(dimColCount));
+                    if (noDictionaryCount > 0) {
+                        Arrays.sort(recordHolderListLocal, new RowComparator(noDictionaryColMaping, noDictionaryCount));
+                    } else {
+                        // sort the record holder list
+                        Arrays.sort(recordHolderListLocal, new RowComparatorForNormalDims(dimColCount));
+                    }
 
                     // write data to file
                     writeDataTofile(recordHolderListLocal, entryCountLocal, destFile);

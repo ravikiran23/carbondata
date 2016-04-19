@@ -101,6 +101,8 @@ public class SortKeyStepMeta extends BaseStepMeta implements StepMetaInterface {
      */
     private String partitionID;
 
+    private String noDictionaryDimsMapping;
+
     /**
      * set the default value for all the properties
      */
@@ -111,6 +113,7 @@ public class SortKeyStepMeta extends BaseStepMeta implements StepMetaInterface {
         outputRowSize = "";
         schemaName = "";
         noDictionaryDims = "";
+        noDictionaryDimsMapping = "";
         cubeName = "";
         dimensionCount = "";
         complexDimensionCount = "";
@@ -138,6 +141,8 @@ public class SortKeyStepMeta extends BaseStepMeta implements StepMetaInterface {
         retval.append("    ").append(XMLHandler.addTagValue("dimensionCount", this.dimensionCount));
         retval.append("    ")
                 .append(XMLHandler.addTagValue("noDictionaryDims", this.noDictionaryDims));
+        retval.append("    ")
+                .append(XMLHandler.addTagValue("noDictionaryDimsMapping", this.noDictionaryDimsMapping));
         retval.append("    ").append(XMLHandler
                 .addTagValue("complexDimensionCount", this.complexDimensionCount));
         retval.append("    ").append(XMLHandler.addTagValue("measureCount", this.measureCount));
@@ -168,6 +173,7 @@ public class SortKeyStepMeta extends BaseStepMeta implements StepMetaInterface {
             this.schemaName = XMLHandler.getTagValue(stepnode, "schemaName");
             this.dimensionCount = XMLHandler.getTagValue(stepnode, "dimensionCount");
             this.noDictionaryDims = XMLHandler.getTagValue(stepnode, "noDictionaryDims");
+            this.noDictionaryDimsMapping = XMLHandler.getTagValue(stepnode, "noDictionaryDimsMapping");
             this.complexDimensionCount = XMLHandler.getTagValue(stepnode, "complexDimensionCount");
             this.measureCount = XMLHandler.getTagValue(stepnode, "measureCount");
             this.updateMemberRequest = XMLHandler.getTagValue(stepnode, "isUpdateMemberRequest");
@@ -200,6 +206,8 @@ public class SortKeyStepMeta extends BaseStepMeta implements StepMetaInterface {
             rep.saveStepAttribute(idTransformation, idStep, "dimensionCount", this.dimensionCount);
             rep.saveStepAttribute(idTransformation, idStep, "noDictionaryDims",
                     this.noDictionaryDims);
+            rep.saveStepAttribute(idTransformation, idStep, "noDictionaryDimsMapping",
+                    this.noDictionaryDimsMapping);
             rep.saveStepAttribute(idTransformation, idStep, "complexDimensionCount",
                     this.complexDimensionCount);
             rep.saveStepAttribute(idTransformation, idStep, "measureCount", this.measureCount);
@@ -234,6 +242,7 @@ public class SortKeyStepMeta extends BaseStepMeta implements StepMetaInterface {
             this.cubeName = rep.getStepAttributeString(idStep, "cubeName");
             this.dimensionCount = rep.getStepAttributeString(idStep, "dimensionCount");
             this.noDictionaryDims = rep.getStepAttributeString(idStep, "noDictionaryDims");
+            this.noDictionaryDims = rep.getStepAttributeString(idStep, "noDictionaryDimsMapping");
             this.complexDimensionCount =
                     rep.getStepAttributeString(idStep, "complexDimensionCount");
             this.measureCount = rep.getStepAttributeString(idStep, "measureCount");
@@ -477,4 +486,12 @@ public class SortKeyStepMeta extends BaseStepMeta implements StepMetaInterface {
     public void setPartitionID(String partitionID) {
         this.partitionID = partitionID;
     }
+    public String getNoDictionaryDimsMapping() {
+        return noDictionaryDimsMapping;
+    }
+
+    public void setNoDictionaryDimsMapping(String noDictionaryDimsMapping) {
+        this.noDictionaryDimsMapping = noDictionaryDimsMapping;
+    }
+
 }
