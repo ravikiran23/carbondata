@@ -279,7 +279,8 @@ class CarbonSqlDDLParser()
               case _ => ("", Seq())
             }
 
-            (dimCols.getOrElse(Seq()), msrCols.getOrElse(Seq()), fromKeyword, withKeyword, source, factFieldsList, dimRelations.getOrElse(Seq()), simpleDimRelations)
+            (dimCols.getOrElse(Seq()), msrCols.getOrElse(Seq()), fromKeyword, withKeyword, source, factFieldsList,
+              dimRelations.getOrElse(Seq()), simpleDimRelations)
           }
         }
 
@@ -288,7 +289,7 @@ class CarbonSqlDDLParser()
           case _ => (Seq(), None)
         }
 
-        ShowCreateCubeCommand(CubeModel(exists.isDefined,
+        ShowCreateCubeCommand(tableModel(exists.isDefined,
           schemaName.getOrElse("default"), schemaName, cubeName, dimCols.map(f => normalizeType(f)).map(f => addParent(f)),
           msrCols.map(f => normalizeType(f)), fromKeyword, withKeyword, source,
           factFieldsList, dimRelations, simpleDimRelations, None, aggregation, partitioner, null))
@@ -324,7 +325,7 @@ class CarbonSqlDDLParser()
     case Token("TOK_CREATETABLE", children) =>
 
       var fields: Seq[Field] = Seq[Field]()
-      var cubeComment: String = ""
+      var tableComment: String = ""
       var tableProperties = Map[String, String]()
       var partitionCols: Seq[PartitionerField] = Seq[PartitionerField]()
       var likeTableName: String = ""
@@ -358,7 +359,7 @@ class CarbonSqlDDLParser()
           tableName = tblName
 
         case Token("TOK_TABLECOMMENT", child :: Nil) =>
-          cubeComment = BaseSemanticAnalyzer.unescapeSQLString(child.getText)
+          tableComment = BaseSemanticAnalyzer.unescapeSQLString(child.getText)
 
         case Token("TOK_TABLEPARTCOLS", list@Token("TOK_TABCOLLIST", _) :: Nil) =>
           val cols = BaseSemanticAnalyzer.getColumns(list(0), false)
@@ -388,21 +389,29 @@ class CarbonSqlDDLParser()
         sys.error("Not a carbon Format request")
       }
 
-      // prepare cube model of the collected tokens
-      val cubeModel: CubeModel = prepareCubeModel(ifNotExistPresent, dbName, tableName, fields, partitionCols, tableProperties)
+      // prepare table model of the collected tokens
+      val tableModel: tableModel = prepareTableModel(ifNotExistPresent, dbName, tableName, fields, partitionCols,
+        tableProperties)
 
       // get logical plan.
-      CreateCube(cubeModel)
+      CreateCube(tableModel)
 
   }
 
-  /*CubeModel(exists.isDefined,
-    schemaName.getOrElse("default"), schemaName, cubeName, dimCols.map(f => normalizeType(f)).map(f => addParent(f)),
-    msrCols.map(f => normalizeType(f)), "", withKeyword, "",
-    None, Seq(), simpleDimRelations, highCard, aggregation,partitioner)*/
-
-  protected def prepareCubeModel(ifNotExistPresent: Boolean, dbName: Option[String]
-                                 , tableName: String, fields: Seq[Field], partitionCols: Seq[PartitionerField], tableProperties: Map[String, String]): CubeModel
+  /**
+    *  This will prepate the Model from the Tree details.
+    *
+    * @param ifNotExistPresent
+    * @param dbName
+    * @param tableName
+    * @param fields
+    * @param partitionCols
+    * @param tableProperties
+    * @return
+    */
+  protected def prepareTableModel(ifNotExistPresent: Boolean, dbName: Option[String]
+                                  , tableName: String, fields: Seq[Field], partitionCols: Seq[PartitionerField],
+                                  tableProperties: Map[String, String]): tableModel
   = {
 
     // get column groups configuration from table properties.
@@ -414,7 +423,7 @@ class CarbonSqlDDLParser()
 
     val partitioner: Option[Partitioner] = getPartitionerObject(partitionCols, tableProperties)
 
-    CubeModel(ifNotExistPresent,
+    tableModel(ifNotExistPresent,
       dbName.getOrElse("default"), dbName, tableName, dims,
       msrs, "", null, "",
       None, Seq(), null, Option(noDictionaryDims), null, partitioner, groupCols)
@@ -495,8 +504,8 @@ class CarbonSqlDDLParser()
     * @param tableProperties
     * @return
     */
-  protected def extractDimColsAndNoDictionaryFields(fields: Seq[Field], tableProperties: Map[String, String]): (Seq[Field], Seq[String]) = {
-
+  protected def extractDimColsAndNoDictionaryFields(fields: Seq[Field],
+                                                    tableProperties: Map[String, String]): (Seq[Field], Seq[String]) = {
     var dimFields: Set[Field] = Set[Field]()
     var splittedCols: Array[String] = Array[String]()
     var noDictionaryDims: Seq[String] = Seq[String]()
@@ -507,7 +516,8 @@ class CarbonSqlDDLParser()
       splittedCols = dicExcludeCols.split(',')
     }
 
-    // by default consider all String cols as dims and if any dictionary exclude is present then add it to nodictionarydims list.
+    // by default consider all String cols as dims and if any dictionary exclude is present then
+    // add it to nodictionarydims list.
     fields.foreach(field => {
       if (field.dataType.get.equalsIgnoreCase("string")) {
         var isNoDictionary = false
@@ -669,8 +679,9 @@ class CarbonSqlDDLParser()
           case _ => (Some(Seq()), Seq(), None)
         }
 
-        CreateCube(CubeModel(exists.isDefined,
-          schemaName.getOrElse("default"), schemaName, cubeName, dimCols.map(f => normalizeType(f)).map(f => addParent(f)),
+        CreateCube(tableModel(exists.isDefined,
+          schemaName.getOrElse("default"), schemaName, cubeName,
+          dimCols.map(f => normalizeType(f)).map(f => addParent(f)),
           msrCols.map(f => normalizeType(f)), "", withKeyword, "",
           None, Seq(), simpleDimRelations, highCard, aggregation, partitioner, null))
       }
@@ -703,7 +714,8 @@ class CarbonSqlDDLParser()
         }
 
         val (noDictionary, aggregation, defaultVals) = options match {
-          case Some(noDictionary ~ aggregation ~ defaultVals) => (noDictionary.getOrElse(Some(Seq())), aggregation.getOrElse(Seq()), defaultVals.getOrElse(Seq()))
+          case Some(noDictionary ~ aggregation ~ defaultVals) => (noDictionary.getOrElse(Some(Seq())),
+            aggregation.getOrElse(Seq()), defaultVals.getOrElse(Seq()))
           case _ => (Some(Seq()), Seq(), Seq())
         }
 
@@ -712,7 +724,8 @@ class CarbonSqlDDLParser()
           case _ => (Seq())
         }
 
-        AlterCube(CubeModel(false, schemaName.getOrElse("default"), schemaName, cubeName, dimCols.map(f => normalizeType(f)),
+        AlterCube(tableModel(false, schemaName.getOrElse("default"), schemaName, cubeName,
+          dimCols.map(f => normalizeType(f)),
           msrCols.map(f => normalizeType(f)), "", withKeyword, "",
           None, Seq(), simpleDimRelations, noDictionary, aggregation, None, null),
           dropCols, defaultVals)
