@@ -69,7 +69,8 @@ case class CubeModel(
                       simpleDimRelations: Seq[DimensionRelation],
                       highcardinalitydims:Option[Seq[String]],
                       aggregation: Seq[Aggregation],
-                      partitioner: Option[Partitioner],rowgroups: Seq[String])
+                      partitioner: Option[Partitioner],
+                      columnGroups: Seq[String])
 
 case class Field(column: String, dataType: Option[String], name: Option[String], children : Option[List[Field]], parent: String = null,storeType: Option[String]=Some("columnar"))
 
@@ -128,7 +129,7 @@ object CubeNewProcessor {
 }
 
 class CubeNewProcessor(cm: CubeModel, sqlContext: SQLContext) {
-  
+
   var index =0
   var rowGroup = 0
   def getAllChildren(fieldChildren : Option[List[Field]]) : Seq[ColumnSchema]  = {
@@ -159,7 +160,7 @@ class CubeNewProcessor(cm: CubeModel, sqlContext: SQLContext) {
     columnSchema.setEncodintList(encoderSet)
     columnSchema.setDimensionColumn(isDimensionCol)
     columnSchema.setRowGroupId(rowGroup)
-    //TODO: Need to fill RowGroupID, Precision, Scala, converted type & Number of Children after DDL finalization   
+    //TODO: Need to fill RowGroupID, Precision, Scala, converted type & Number of Children after DDL finalization
     columnSchema
   }
 
@@ -177,10 +178,10 @@ class CubeNewProcessor(cm: CubeModel, sqlContext: SQLContext) {
     }
   }
 
-  private def updateRowGroupsInFields(rowGrps: Seq[String], allCols: Seq[ColumnSchema]): Unit = {
-    if(null != rowGrps ) {
-      rowGrps.foreach(eachRow => {
-        var rowCols = eachRow.split(",")
+  private def updateColumnGroupsInFields(colGrps: Seq[String], allCols: Seq[ColumnSchema]): Unit = {
+    if(null != colGrps ) {
+      colGrps.foreach(columngroup => {
+        var rowCols = columngroup.split(",")
         var rowGroupId = -1
         rowCols.foreach(row => {
 
@@ -219,14 +220,14 @@ class CubeNewProcessor(cm: CubeModel, sqlContext: SQLContext) {
     	   if(None != field.children && field.children.get != null)
     	  	 allColumns ++= getAllChildren(field.children)
       })
-      
-      cm.msrCols.map(field => 
+
+      cm.msrCols.map(field =>
         {
           var encoders = Seq[Encoding]();
           val coloumnSchema: ColumnSchema = getColumnSchema(normalizeType(field.dataType.getOrElse("")), field.name.getOrElse(field.column), index, true, encoders ,false,rowGrp)
     	   // val measureCol = new ColumnSchema(normalizeType(field.dataType.getOrElse("")), field.name.getOrElse(field.column), index, true, encoders, false)
           val measureCol = coloumnSchema
-    	    
+
           allColumns ++= Seq(measureCol)
           index = index + 1
           rowGrp = rowGrp + 1
@@ -240,7 +241,7 @@ class CubeNewProcessor(cm: CubeModel, sqlContext: SQLContext) {
       sys.error(s"Duplicate dimensions found with name : $name")
     })
 
-    updateRowGroupsInFields(cm.rowgroups,allColumns)
+    updateColumnGroupsInFields(cm.columnGroups,allColumns)
 
     val highCardinalityDims=cm.highcardinalitydims.getOrElse(Seq())
     for(column <- allColumns)

@@ -19,21 +19,16 @@
 
 package org.apache.spark.sql.hive
 
-import org.apache.hadoop.hive.ql.lib.Node
 import org.apache.hadoop.hive.ql.parse.ASTNode
 
 /**
-  * Created by Administrator on 4/12/2016.
+  * Wrapper class for using the hiveQl class of hive.
   */
-object HiveQlWrapper  {
+object HiveQlWrapper {
 
   def getAst(sql: String): ASTNode = {
 
     HiveQl.getAst(sql)
   }
-
-  /*protected def extractDbNameTableName(tableNameParts: Node): (Option[String], String) = {
-  }*/
-
 
 }
