@@ -353,9 +353,9 @@ class CarbonSqlDDLParser()
           ifNotExistPresent = true
 
         case t@Token("TOK_TABNAME", _) =>
-          var (db, tableName) = extractDbNameTableName(t)
+         val (db, tblName) = extractDbNameTableName(t)
           dbName = db
-          this.tableName = tableName
+          tableName = tblName
 
         case Token("TOK_TABLECOMMENT", child :: Nil) =>
           cubeComment = BaseSemanticAnalyzer.unescapeSQLString(child.getText)
