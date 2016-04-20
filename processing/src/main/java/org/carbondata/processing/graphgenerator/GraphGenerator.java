@@ -19,9 +19,6 @@
 
 package org.carbondata.processing.graphgenerator;
 
-import java.io.*;
-import java.util.*;
-
 import org.carbondata.common.logging.LogService;
 import org.carbondata.common.logging.LogServiceFactory;
 import org.carbondata.core.carbon.CarbonDataLoadSchema;

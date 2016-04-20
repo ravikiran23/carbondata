@@ -68,7 +68,7 @@ case class tableModel(
                        factFieldsList: Option[FilterCols],
                        dimRelations: Seq[DimensionRelation],
                        simpleDimRelations: Seq[DimensionRelation],
-                       highcardinalitydims: Option[Seq[String]],
+                       noDictionaryDimensions: Option[Seq[String]],
                        aggregation: Seq[Aggregation],
                        partitioner: Option[Partitioner],
                        columnGroups: Seq[String])
@@ -204,24 +204,23 @@ class CubeNewProcessor(cm: tableModel, sqlContext: SQLContext) {
       sys.error(s"Duplicate dimensions found with name : $name")
     })
 
-    val highCardinalityDims = cm.highcardinalitydims.getOrElse(Seq())
+    val noDictionaryDims = cm.noDictionaryDimensions.getOrElse(Seq())
 
-    checkColGroupsValidity(cm.columnGroups, allColumns, highCardinalityDims)
+    checkColGroupsValidity(cm.columnGroups, allColumns, noDictionaryDims)
 
     updateColumnGroupsInFields(cm.columnGroups, allColumns)
 
     for (column <- allColumns) {
-      if (highCardinalityDims.contains(column.getColumnName)) {
+      if (noDictionaryDims.contains(column.getColumnName)) {
         column.getEncodingList.remove(Encoding.DICTIONARY)
       }
     }
 
     var newOrderedDims = scala.collection.mutable.ListBuffer[ColumnSchema]()
-    val highCardDims = scala.collection.mutable.ListBuffer[ColumnSchema]()
     val complexDims = scala.collection.mutable.ListBuffer[ColumnSchema]()
     val measures = scala.collection.mutable.ListBuffer[ColumnSchema]()
     for (column <- allColumns) {
-      if (highCardinalityDims.contains(column.getColumnName)) {
+      if (noDictionaryDims.contains(column.getColumnName)) {
         newOrderedDims.add(column)
       }
       else if (column.getDataType == DataType.ARRAY || column.getDataType == DataType.STRUCT
@@ -242,23 +241,12 @@ class CubeNewProcessor(cm: tableModel, sqlContext: SQLContext) {
       val encoders = Seq[Encoding]();
       encoders.add(Encoding.DICTIONARY)
       val coloumnSchema: ColumnSchema = getColumnSchema(DataType.DOUBLE, CarbonCommonConstants.DEFAULT_INVISIBLE_DUMMY_MEASURE, index, true, encoders, false, rowGrp)
-      // val measureColumn = new ColumnSchema(DataType.DOUBLE,CarbonCommonConstants.DEFAULT_INVISIBLE_DUMMY_MEASURE, index, true, encoders, false)
       val measureColumn = coloumnSchema
       measures.add(measureColumn)
     }
 
     newOrderedDims = newOrderedDims ++ complexDims ++ measures
-    //Update measures with aggregators if specified.
-    //Not required in new schema, as its a column in table.
-    //    val msrsUpdatedWithAggregators = cm.aggregation match {
-    //      case aggs: Seq[Aggregation] =>
-    //        measures.map { f =>
-    //          val matchedMapping = aggs.filter(agg => f.column_name.equals(agg.msrName))
-    //          if (matchedMapping.length == 0) f
-    //          else f.setAggregator(new Aggregator(getSchemaAggregates(matchedMapping.head.aggType)))
-    //        }
-    //      case _ => measures
-    //    }
+
 
     val partitioner = cm.partitioner match {
       case Some(part: Partitioner) =>
@@ -522,22 +510,12 @@ class CubeProcessor(cm: tableModel, sqlContext: SQLContext) {
       })
     })
 
-    //    val hierarchies = levels.map(field => Hierarchy(field.name, None, Seq(field), None))
-
-    //    val hierarchies = levels.groupBy(
-    //        _.name.split('.')(0)
-    //        ).map(
-    //        fields =>
-    //          Hierarchy(fields._1, None, fields._2, None)
-    //        ).toSeq
-
     val groupedSeq = levels.groupBy(_.name.split('.')(0))
     val hierarchies = levels.filter(level => !level.name.contains(".")).map(parentLevel => Hierarchy(parentLevel.name, None, groupedSeq.get(parentLevel.name).get, None))
     var dimensions = hierarchies.map(field => Dimension(field.name, Seq(field), None))
 
     dimensions = dimensions ++ dimSrcDimensions
-    //    val highCardinalityDims=cm.highcardinalitydims.get
-    val highCardinalityDims = cm.highcardinalitydims.getOrElse(Seq())
+    val highCardinalityDims = cm.noDictionaryDimensions.getOrElse(Seq())
     for (dimension <- dimensions) {
 
       if (highCardinalityDims.contains(dimension.name)) {
