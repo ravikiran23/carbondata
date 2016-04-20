@@ -127,6 +127,30 @@ object GlobalDictionaryUtil extends Logging {
   }
 
   /**
+    * invokes the CarbonDictionarySortIndexWriter to write column sort info
+    * sortIndex and sortIndexInverted data to sortinsex file.
+    *
+    * @param model
+    * @param index
+    */
+  def writeGlobalDictionaryColumnSortInfo(model: DictionaryLoadModel, index: Int) = {
+    val preparator: CarbonDictionarySortInfoPreparator =
+      new CarbonDictionarySortInfoPreparator(model.hdfsLocation, model.table);
+    val dictionarySortInfo: CarbonDictionarySortInfo =
+      preparator.getDictionarySortInfo(model.columns(index))
+    val carbonDictionaryWriter: CarbonDictionarySortIndexWriter =
+      new CarbonDictionarySortIndexWriterImpl(model.table, model.columns(index), model.hdfsLocation,
+        false)
+    try {
+      carbonDictionaryWriter.writeSortIndex(dictionarySortInfo.getSortIndex)
+      carbonDictionaryWriter.writeInvertedSortIndex(dictionarySortInfo.getSortIndexInverted);
+    }
+    finally {
+      carbonDictionaryWriter.close();
+    }
+  }
+
+  /**
     * invoke CarbonDictionaryReader to read dictionary from files.
     *
     * @param model
@@ -260,8 +284,8 @@ object GlobalDictionaryUtil extends Logging {
       }
       //columns which need to generate global dictionary file
       val carbonTable = carbonLoadModel.getCarbonDataLoadSchema.getCarbonTable
-      val (requireColumns, requireColumnIds) = pruneDimensions(carbonTable.getDimensionByTableName(
-        carbonTable.getFactTableName).map(x => x).toArray, df.columns)
+      val (requireColumns, requireColumnIds) =
+        pruneDimensions(carbonTable.getDimensionByTableName(carbonTable.getFactTableName).map(x => x).toArray, df.columns)
       if (requireColumns.size >= 1) {
         //select column to push down pruning
         df = df.select(requireColumns.head, requireColumns.tail: _*)
