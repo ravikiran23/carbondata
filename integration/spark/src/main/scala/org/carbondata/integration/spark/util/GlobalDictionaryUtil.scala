@@ -19,6 +19,7 @@
 package org.carbondata.integration.spark.util
 
 import org.apache.spark.Logging
+
 import scala.util.control.Breaks._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
@@ -47,6 +48,7 @@ import org.carbondata.core.writer.{CarbonDictionaryWriter, CarbonDictionaryWrite
 import org.carbondata.integration.spark.load.{CarbonDictionarySortInfo, CarbonDictionarySortInfoPreparator, CarbonLoadModel}
 import org.carbondata.integration.spark.rdd.{CarbonBlockDistinctValuesCombineRDD, CarbonGlobalDictionaryGenerateRDD, ColumnPartitioner, DictionaryLoadModel}
 import org.carbondata.core.carbon.metadata.encoder.Encoding
+import org.carbondata.core.carbon.metadata.schema.table.column.CarbonDimension
 
 import scala.collection.JavaConversions.asScalaBuffer
 import scala.collection.mutable.{ArrayBuffer, HashSet}
@@ -136,9 +138,9 @@ object GlobalDictionaryUtil extends Logging {
     val preparator: CarbonDictionarySortInfoPreparator =
       new CarbonDictionarySortInfoPreparator(model.hdfsLocation, model.table);
     val dictionarySortInfo: CarbonDictionarySortInfo =
-      preparator.getDictionarySortInfo(model.columns(index))
+      preparator.getDictionarySortInfo(model.columnIds(index))
     val carbonDictionaryWriter: CarbonDictionarySortIndexWriter =
-      new CarbonDictionarySortIndexWriterImpl(model.table, model.columns(index), model.hdfsLocation,
+      new CarbonDictionarySortIndexWriterImpl(model.table, model.columnIds(index), model.hdfsLocation,
         false)
     try {
       carbonDictionaryWriter.writeSortIndex(dictionarySortInfo.getSortIndex)

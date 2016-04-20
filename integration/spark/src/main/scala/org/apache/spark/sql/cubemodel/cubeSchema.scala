@@ -151,7 +151,7 @@ class CubeNewProcessor(cm: tableModel, sqlContext: SQLContext) {
     allColumns
   }
 
-  def getColumnSchema(dataType: DataType, colName: String, index: Integer, isCol: Boolean, encoders: Seq[Encoding], isDimensionCol: Boolean, rowGroup: Integer): ColumnSchema = {
+  def getColumnSchema(dataType: DataType, colName: String, index: Integer, isCol: Boolean, encoders: Seq[Encoding], isDimensionCol: Boolean, colGroup: Integer): ColumnSchema = {
     val columnSchema = new ColumnSchema()
     columnSchema.setDataType(dataType)
     columnSchema.setColumnName(colName)
@@ -160,7 +160,7 @@ class CubeNewProcessor(cm: tableModel, sqlContext: SQLContext) {
     val encoderSet = new java.util.HashSet(encoders)
     columnSchema.setEncodintList(encoderSet)
     columnSchema.setDimensionColumn(isDimensionCol)
-    columnSchema.setRowGroupId(rowGroup)
+    columnSchema.setColumnGroup(colGroup)
     //TODO: Need to fill RowGroupID, Precision, Scala, converted type & Number of Children after DDL finalization
     columnSchema
   }
@@ -382,17 +382,17 @@ class CubeNewProcessor(cm: tableModel, sqlContext: SQLContext) {
     if (null != colGrps) {
       colGrps.foreach(columngroup => {
         var rowCols = columngroup.split(",")
-        var rowGroupId = -1
+        var colGroupId = -1
         rowCols.foreach(row => {
 
           allCols.map(eachCol => {
 
             if (eachCol.getColumnName.equalsIgnoreCase(row)) {
-              if (-1 != rowGroupId) {
-                eachCol.setRowGroupId(rowGroupId)
+              if (-1 != colGroupId) {
+                eachCol.setColumnGroup(colGroupId)
               }
               else {
-                rowGroupId = eachCol.getRowGroupId()
+                colGroupId = eachCol.getColumnGroupId()
               }
             }
           })
