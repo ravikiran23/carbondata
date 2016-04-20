@@ -515,10 +515,10 @@ class CubeProcessor(cm: tableModel, sqlContext: SQLContext) {
     var dimensions = hierarchies.map(field => Dimension(field.name, Seq(field), None))
 
     dimensions = dimensions ++ dimSrcDimensions
-    val highCardinalityDims = cm.noDictionaryDimensions.getOrElse(Seq())
+    val noDictionarydims = cm.noDictionaryDimensions.getOrElse(Seq())
     for (dimension <- dimensions) {
 
-      if (highCardinalityDims.contains(dimension.name)) {
+      if (noDictionarydims.contains(dimension.name)) {
         dimension.highCardinality = true
       }
 
@@ -528,7 +528,7 @@ class CubeProcessor(cm: tableModel, sqlContext: SQLContext) {
     val highCardDims = scala.collection.mutable.ListBuffer[Dimension]()
     val complexDims = scala.collection.mutable.ListBuffer[Dimension]()
     for (dimension <- dimensions) {
-      if (highCardinalityDims.contains(dimension.name)) {
+      if (noDictionarydims.contains(dimension.name)) {
         // dimension.highCardinality=true
         highCardDims.add(dimension)
       }
