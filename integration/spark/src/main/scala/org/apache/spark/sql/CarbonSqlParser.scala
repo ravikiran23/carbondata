@@ -194,7 +194,8 @@ class CarbonSqlDDLParser()
         }
     }
 
-  protected lazy val aggregates: Parser[Seq[AggregateTableAttributes]] = repsep((aggregateExpression | aggAttribute), ",")
+  protected lazy val aggregates: Parser[Seq[AggregateTableAttributes]] =
+    repsep((aggregateExpression | aggAttribute), ",")
 
   protected lazy val aggAttribute: Parser[AggregateTableAttributes] =
     (ident | stringLit) ^^ {
@@ -206,9 +207,15 @@ class CarbonSqlDDLParser()
       COUNT ~> "(" ~> (ident | stringLit) <~ ")" ^^ { case e1 => AggregateTableAttributes(e1, COUNT.str) } |
       MAX ~> "(" ~> (ident | stringLit) <~ ")" ^^ { case e1 => AggregateTableAttributes(e1, MAX.str) } |
       MIN ~> "(" ~> (ident | stringLit) <~ ")" ^^ { case e1 => AggregateTableAttributes(e1, MIN.str) } |
-      COUNT ~> "(" ~> DISTINCT ~> (ident | stringLit) <~ ")" ^^ { case e1 => AggregateTableAttributes(e1, DISTINCT_COUNT.str) } |
-      DISTINCT ~> COUNT ~> "(" ~> (ident | stringLit) <~ ")" ^^ { case e1 => AggregateTableAttributes(e1, COUNT.str) } |
-      SUM ~> "(" ~> DISTINCT ~> (ident | stringLit) <~ ")" ^^ { case e1 => AggregateTableAttributes(e1, SUM_DISTINCT.str) } |
+      COUNT ~> "(" ~> DISTINCT ~> (ident | stringLit) <~ ")" ^^ { case e1 => AggregateTableAttributes(e1,
+        DISTINCT_COUNT.str)
+      } |
+      DISTINCT ~> COUNT ~> "(" ~> (ident | stringLit) <~ ")" ^^ { case e1 => AggregateTableAttributes(e1,
+        COUNT.str)
+      } |
+      SUM ~> "(" ~> DISTINCT ~> (ident | stringLit) <~ ")" ^^ { case e1 => AggregateTableAttributes(e1,
+        SUM_DISTINCT.str)
+      } |
       AVG ~> "(" ~> (ident | stringLit) <~ ")" ^^ { case e1 => AggregateTableAttributes(e1, AVG.str) }
       )
 
@@ -263,7 +270,8 @@ class CarbonSqlDDLParser()
       showCubeDefinition ~
       (OPTIONS ~> showcreateCubeOptionDef).? <~ (";").? ^^ {
       case exists ~ schemaName ~ cubeName ~ cubeDefinition ~ options => {
-        val (dimCols, msrCols, fromKeyword, withKeyword, source, factFieldsList, dimRelations, simpleDimRelations) = cubeDefinition match {
+        val (dimCols, msrCols, fromKeyword, withKeyword, source, factFieldsList, dimRelations, simpleDimRelations) =
+          cubeDefinition match {
           case _ ~ _ ~ Some(_) ~ Some(_) => sys.error("FROM and WITH keywords can not be used together")
 
           case dimCols ~ msrCols ~ fromBody ~ withBody => {
@@ -354,7 +362,7 @@ class CarbonSqlDDLParser()
           ifNotExistPresent = true
 
         case t@Token("TOK_TABNAME", _) =>
-         val (db, tblName) = extractDbNameTableName(t)
+          val (db, tblName) = extractDbNameTableName(t)
           dbName = db
           tableName = tblName
 
@@ -444,7 +452,8 @@ class CarbonSqlDDLParser()
       val nonSplitCols: String = tableProperties.get("COLUMN_GROUPS").get
 
       // row groups will be specified in table properties like -> "(col1,col2),(col3,col4)"
-      // here first splitting the value by () . so that the above will be splitted into 2 strings. [col1,col2] [col3,col4]
+      // here first splitting the value by () . so that the above will be splitted into 2 strings.
+      // [col1,col2] [col3,col4]
       val m: Matcher = Pattern.compile("\\(([^)]+)\\)").matcher(nonSplitCols)
       while (m.find()) {
         val oneGroup: String = m.group(1)
@@ -466,7 +475,8 @@ class CarbonSqlDDLParser()
     * @param tableProperties
     * @return
     */
-  protected def getPartitionerObject(partitionCols: Seq[PartitionerField], tableProperties: Map[String, String]): Option[Partitioner] = {
+  protected def getPartitionerObject(partitionCols: Seq[PartitionerField], tableProperties: Map[String, String]):
+  Option[Partitioner] = {
 
     // by default setting partition class empty. later in cube schema it is setting to default value.
     var partitionClass: String = ""
@@ -820,7 +830,8 @@ class CarbonSqlDDLParser()
     }
 
   protected lazy val dimRelation: Parser[DimensionRelation] =
-    (ident <~ ":") ~ (dbTableIdentifier | stringLit) ~ cubeRelation ~ ((INCLUDE | EXCLUDE) ~ ("(" ~> repsep(ident | stringLit, ",") <~ ")")).? ^^ {
+    (ident <~ ":") ~ (dbTableIdentifier | stringLit) ~ cubeRelation ~ ((INCLUDE | EXCLUDE) ~ ("(" ~>
+      repsep(ident | stringLit, ",") <~ ")")).? ^^ {
       case tableName ~ dimSource ~ relation ~ filterCols => {
         val (includeKey, fieldList) = filterCols match {
           case Some(includeKey ~ fieldList) => (includeKey, fieldList)
@@ -863,7 +874,8 @@ class CarbonSqlDDLParser()
   protected lazy val arrayFieldType: Parser[Field] =
     (ARRAY ~> "<" ~> nestedType <~ ">") ^^ {
       case e1 => {
-        Field("unknown", Some("array"), Some("unknown"), Some(List(Field("val", e1.dataType, Some("val"), e1.children))))
+        Field("unknown", Some("array"), Some("unknown"), Some(List(Field("val", e1.dataType, Some("val"),
+          e1.children))))
       }
     }
 
@@ -875,7 +887,8 @@ class CarbonSqlDDLParser()
     }
 
   protected lazy val measureCol: Parser[Field] =
-    (ident | stringLit) ~ (INTEGER | NUMERIC | BIGINT | DECIMAL).? ~ (AS ~> (ident | stringLit)).? ~ (IN ~> (ident | stringLit)).? ^^ {
+    (ident | stringLit) ~ (INTEGER | NUMERIC | BIGINT | DECIMAL).? ~ (AS ~> (ident | stringLit)).? ~
+      (IN ~> (ident | stringLit)).? ^^ {
       case e1 ~ e2 ~ e3 ~ e4 => Field(e1, e2, e3, Some(null))
     }
 
@@ -969,8 +982,10 @@ class CarbonSqlDDLParser()
       case "double" => Field(field.column, Some("Double"), field.name, Some(null), field.parent, field.storeType)
       case "timestamp" => Field(field.column, Some("Timestamp"), field.name, Some(null), field.parent, field.storeType)
       case "numeric" => Field(field.column, Some("Numeric"), field.name, Some(null), field.parent, field.storeType)
-      case "array" => Field(field.column, Some("Array"), field.name, field.children.map(f => f.map(normalizeType(_))), field.parent, field.storeType)
-      case "struct" => Field(field.column, Some("Struct"), field.name, field.children.map(f => f.map(normalizeType(_))), field.parent, field.storeType)
+      case "array" => Field(field.column, Some("Array"), field.name, field.children.map(f => f.map(normalizeType(_))),
+        field.parent, field.storeType)
+      case "struct" => Field(field.column, Some("Struct"), field.name, field.children.map(f => f.map(normalizeType(_))),
+        field.parent, field.storeType)
       case "bigint" => Field(field.column, Some("BigInt"), field.name, Some(null), field.parent, field.storeType)
       case "decimal" => Field(field.column, Some("Decimal"), field.name, Some(null), field.parent, field.storeType)
       case _ => field

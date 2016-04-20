@@ -15,7 +15,8 @@ private class TestCarbonSqlParserStub extends CarbonSqlDDLParser {
     updateColumnGroupsInField(tableProperties)
   }
 
-  def extractDimColsAndNoDictionaryFieldsTest(fields: Seq[Field], tableProperties: Map[String, String]): (Seq[Field], Seq[String]) = {
+  def extractDimColsAndNoDictionaryFieldsTest(fields: Seq[Field], tableProperties: Map[String, String]): (Seq[Field],
+    Seq[String]) = {
 
     extractDimColsAndNoDictionaryFields(fields, tableProperties)
   }
@@ -56,13 +57,13 @@ class TestCarbonSqlParser extends QueryTest {
 
   // Testing the extracting of Dims and no Dictionary
   test("Test-extractDimColsAndNoDictionaryFields") {
-    val tableProperties = Map("DICTIONARY_EXCLUDE" -> "col2","DICTIONARY_INCLUDE" -> "col4")
+    val tableProperties = Map("DICTIONARY_EXCLUDE" -> "col2", "DICTIONARY_INCLUDE" -> "col4")
     var fields: Seq[Field] = Seq[Field]()
 
-    var col1 = Field("col1", Option("Int"), Option("col1"),None, null,Some("columnar"))
-    var col2 = Field("col2", Option("String"), Option("col2"),None, null,Some("columnar"))
-    var col3 = Field("col3", Option("String"), Option("col3"),None, null,Some("columnar"))
-    var col4 = Field("col4", Option("Int"), Option("col4"),None, null,Some("columnar"))
+    var col1 = Field("col1", Option("Int"), Option("col1"), None, null, Some("columnar"))
+    var col2 = Field("col2", Option("String"), Option("col2"), None, null, Some("columnar"))
+    var col3 = Field("col3", Option("String"), Option("col3"), None, null, Some("columnar"))
+    var col4 = Field("col4", Option("Int"), Option("col4"), None, null, Some("columnar"))
 
     fields :+= col1
     fields :+= col2
@@ -70,7 +71,7 @@ class TestCarbonSqlParser extends QueryTest {
     fields :+= col4
 
     val stub = new TestCarbonSqlParserStub()
-    var (dimCols,noDictionary )= stub.extractDimColsAndNoDictionaryFieldsTest(fields,tableProperties)
+    var (dimCols, noDictionary) = stub.extractDimColsAndNoDictionaryFieldsTest(fields, tableProperties)
 
     // testing col
 
@@ -84,13 +85,13 @@ class TestCarbonSqlParser extends QueryTest {
 
   // Testing the extracting of measures
   test("Test-extractMsrColsFromFields") {
-    val tableProperties = Map("DICTIONARY_EXCLUDE" -> "col2","DICTIONARY_INCLUDE" -> "col4")
+    val tableProperties = Map("DICTIONARY_EXCLUDE" -> "col2", "DICTIONARY_INCLUDE" -> "col4")
     var fields: Seq[Field] = Seq[Field]()
 
-    var col1 = Field("col1", Option("Int"), Option("col1"),None, null,Some("columnar"))
-    var col2 = Field("col2", Option("String"), Option("col2"),None, null,Some("columnar"))
-    var col3 = Field("col3", Option("String"), Option("col3"),None, null,Some("columnar"))
-    var col4 = Field("col4", Option("Int"), Option("col4"),None, null,Some("columnar"))
+    var col1 = Field("col1", Option("Int"), Option("col1"), None, null, Some("columnar"))
+    var col2 = Field("col2", Option("String"), Option("col2"), None, null, Some("columnar"))
+    var col3 = Field("col3", Option("String"), Option("col3"), None, null, Some("columnar"))
+    var col4 = Field("col4", Option("Int"), Option("col4"), None, null, Some("columnar"))
 
     fields :+= col1
     fields :+= col2
@@ -98,7 +99,7 @@ class TestCarbonSqlParser extends QueryTest {
     fields :+= col4
 
     val stub = new TestCarbonSqlParserStub()
-    var msrCols = stub.extractMsrColsFromFieldsTest(fields,tableProperties)
+    var msrCols = stub.extractMsrColsFromFieldsTest(fields, tableProperties)
 
     // testing col
 

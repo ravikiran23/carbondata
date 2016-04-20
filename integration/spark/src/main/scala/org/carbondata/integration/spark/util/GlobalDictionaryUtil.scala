@@ -54,20 +54,20 @@ import scala.language.implicitConversions
 import scala.util.control.Breaks._
 
 /**
- * A object which provide a method to generate global dictionary from CSV files.
- *
- * @author: QiangCai
- * @date: Apr 10, 2016 9:59:55 PM
- */
+  * A object which provide a method to generate global dictionary from CSV files.
+  *
+  * @author: QiangCai
+  * @date: Apr 10, 2016 9:59:55 PM
+  */
 object GlobalDictionaryUtil extends Logging {
 
   /**
-   * find columns which need to generate global dictionary.
-   *
-   * @param dimensions dimension list of schema
-   * @param columns column list of csv file
-   * @return: java.lang.String[]
-   */
+    * find columns which need to generate global dictionary.
+    *
+    * @param dimensions dimension list of schema
+    * @param columns    column list of csv file
+    * @return: java.lang.String[]
+    */
   def pruneColumns(dimensions: Array[String], columns: Array[String]) = {
     val columnBuffer = new ArrayBuffer[String]
     for (dim <- dimensions) {
@@ -82,13 +82,13 @@ object GlobalDictionaryUtil extends Logging {
     }
     columnBuffer.toArray
   }
-  
+
   def pruneDimensions(dimensions: Array[CarbonDimension], columns: Array[String]) = {
     val columnNameBuffer = new ArrayBuffer[String]
     val columnIdBuffer = new ArrayBuffer[String]
     for (dim <- dimensions) {
-        if(dim.hasEncoding(Encoding.DICTIONARY)){
-          breakable {
+      if (dim.hasEncoding(Encoding.DICTIONARY)) {
+        breakable {
           for (i <- 0 until columns.length) {
             if (dim.getColName.equalsIgnoreCase(columns(i))) {
               columnNameBuffer += dim.getColName
@@ -103,12 +103,12 @@ object GlobalDictionaryUtil extends Logging {
   }
 
   /**
-   * invoke CarbonDictionaryWriter to write dictionary to file.
-   *
-   * @param model instance of DictionaryLoadModel
-   * @param columnIndex the index of current column in column list
-   * @param iter distinct value list of dictionary
-   */
+    * invoke CarbonDictionaryWriter to write dictionary to file.
+    *
+    * @param model       instance of DictionaryLoadModel
+    * @param columnIndex the index of current column in column list
+    * @param iter        distinct value list of dictionary
+    */
   def writeGlobalDictionaryToFile(model: DictionaryLoadModel,
                                   columnIndex: Int,
                                   iter: Iterator[String]) = {
@@ -127,34 +127,11 @@ object GlobalDictionaryUtil extends Logging {
   }
 
   /**
-    * invokes the CarbonDictionarySortIndexWriter to write column sort info
-    * sortIndex and sortIndexInverted data to sortinsex file.
+    * invoke CarbonDictionaryReader to read dictionary from files.
+    *
     * @param model
-    * @param index
+    * @return: scala.Tuple2<scala.collection.mutable.HashSet<java.lang.String>[],boolean[]>
     */
-  def writeGlobalDictionaryColumnSortInfo(model: DictionaryLoadModel, index: Int) = {
-    val preparator: CarbonDictionarySortInfoPreparator =
-      new CarbonDictionarySortInfoPreparator(model.hdfsLocation, model.table);
-    val dictionarySortInfo: CarbonDictionarySortInfo =
-      preparator.getDictionarySortInfo(model.columns(index))
-    val carbonDictionaryWriter: CarbonDictionarySortIndexWriter =
-      new CarbonDictionarySortIndexWriterImpl(model.table, model.columns(index), model.hdfsLocation,
-        false)
-    try {
-      carbonDictionaryWriter.writeSortIndex(dictionarySortInfo.getSortIndex)
-      carbonDictionaryWriter.writeInvertedSortIndex(dictionarySortInfo.getSortIndexInverted);
-    }
-    finally {
-      carbonDictionaryWriter.close();
-    }
-  }
-
-  /**
-   * invoke CarbonDictionaryReader to read dictionary from files.
-   *
-   * @param model
-   * @return: scala.Tuple2<scala.collection.mutable.HashSet<java.lang.String>[],boolean[]>
-   */
   def readGlobalDictionaryFromFile(model: DictionaryLoadModel) = {
     val dicts = new Array[HashSet[String]](model.columnIds.length)
     val existDicts = new Array[Boolean](model.columnIds.length)
@@ -175,15 +152,15 @@ object GlobalDictionaryUtil extends Logging {
   }
 
   /**
-   * create a instance of DictionaryLoadModel
-   *
-   * @param table CarbonTableIdentifier
-   * @param columns column list
-   * @param hdfsLocation store location in HDFS
-   * @param dictfolderPath path of dictionary folder
-   * @param isSharedDimension a boolean to mark share dimension or non-share dimension
-   * @return: org.carbondata.integration.spark.rdd.DictionaryLoadModel
-   */
+    * create a instance of DictionaryLoadModel
+    *
+    * @param table             CarbonTableIdentifier
+    * @param columns           column list
+    * @param hdfsLocation      store location in HDFS
+    * @param dictfolderPath    path of dictionary folder
+    * @param isSharedDimension a boolean to mark share dimension or non-share dimension
+    * @return: org.carbondata.integration.spark.rdd.DictionaryLoadModel
+    */
   def createDictionaryLoadModel(table: CarbonTableIdentifier,
                                 columnNames: Array[String],
                                 columnIds: Array[String],
@@ -194,7 +171,8 @@ object GlobalDictionaryUtil extends Logging {
     val dictFilePaths = new Array[String](columnIds.length)
     val dictFileExists = new Array[Boolean](columnIds.length)
     val carbonTablePath = CarbonStorePath.getCarbonTablePath(hdfsLocation, table)
-    for (i <- 0 until columnIds.length) {      dictFilePaths(i) = carbonTablePath.getDictionaryFilePath(columnIds(i))
+    for (i <- 0 until columnIds.length) {
+      dictFilePaths(i) = carbonTablePath.getDictionaryFilePath(columnIds(i))
       dictFileExists(i) = CarbonUtil.isFileExists(dictFilePaths(i))
     }
     new DictionaryLoadModel(table,
@@ -208,99 +186,46 @@ object GlobalDictionaryUtil extends Logging {
   }
 
   /**
-   * append all file path to a String, file path separated by comma 
-   */
-  def getPathsFromCarbonFile(carbonFile: CarbonFile): String ={
-    if(carbonFile.isDirectory()){
+    * append all file path to a String, file path separated by comma
+    */
+  def getPathsFromCarbonFile(carbonFile: CarbonFile): String = {
+    if (carbonFile.isDirectory()) {
       val files = carbonFile.listFiles()
       val stringbuild = new StringBuilder()
-      for( j <- 0 until files.size){
+      for (j <- 0 until files.size) {
         stringbuild.append(getPathsFromCarbonFile(files(j))).append(",")
       }
       stringbuild.substring(0, stringbuild.size - 1)
-    }else{
+    } else {
       carbonFile.getPath
     }
   }
-  
+
   /**
-   * append all file path to a String, inputPath path separated by comma 
-   */
+    * append all file path to a String, inputPath path separated by comma
+    */
   def getPaths(inputPath: String): String = {
-    if(inputPath == null || inputPath.isEmpty){
+    if (inputPath == null || inputPath.isEmpty) {
       inputPath
-    }else{
+    } else {
       val stringbuild = new StringBuilder()
       val filePaths = inputPath.split(",")
-      for( i <- 0 until filePaths.size ){
+      for (i <- 0 until filePaths.size) {
         val fileType = FileFactory.getFileType(filePaths(i))
         val carbonFile = FileFactory.getCarbonFile(filePaths(i), fileType)
         stringbuild.append(getPathsFromCarbonFile(carbonFile)).append(",")
       }
-      stringbuild.substring(0, stringbuild.size -1)
-    }
-  }
-  
-  /**
-   * load CSV files to DataFrame by using datasource "com.databricks.spark.csv"
-   *
-   * @param sqlContext SQLContext
-   * @param filePath file or directory path
-   * @return: org.apache.spark.sql.DataFrame
-   */
-  private def loadDataFrame(sqlContext: SQLContext, filePath: String): DataFrame = {
-    val df = new SQLContext(sqlContext.sparkContext).read
-      .format("com.databricks.spark.csv")
-      .option("header", "true")
-      .option("comment", null)
-      .load(getPaths(filePath))
-    df
-  }
-
-  /**
-   * check whether global dictionary have been generated successfully or not.
-   *
-   * @param status Array[(String, String)]
-   * @return: void
-   */
-  private def checkStatus(status: Array[(String, String)]) = {
-    if (status.exists(x => CarbonCommonConstants.STORE_LOADSTATUS_FAILURE.equals(x._2))) {
-      logError("generate global dictionary files failed")
-      throw new Exception("Failed to generate global dictionary files")
-    } else {
-      logInfo("generate global dictionary successfully")
+      stringbuild.substring(0, stringbuild.size - 1)
     }
   }
 
   /**
-   * extract dimension set from hierarchy
-   *
-   * @param schema
-   * @return: scala.collection.mutable.HashSet<java.lang.String>
-   */
-  private def extractHierachyDimension(schema: Schema): HashSet[String] = {
-    val dimensionSet = new HashSet[String]
-    val dimensions = schema.cubes(0).dimensions
-    for (i <- 0 until dimensions.length) {
-      val hierarchies = dimensions(i).getDimension(schema).hierarchies
-      for (hierachy <- hierarchies) {
-        if (hierachy.relation != null) {
-          for (level <- hierachy.levels) {
-            dimensionSet += level.column
-          }
-        }
-      }
-    }
-    dimensionSet
-  }
-
-  /**
-   * generate global dictionary with SQLContext and CarbonLoadModel
-   *
-   * @param sqlContext
-   * @param carbonLoadModel
-   * @return a integer 1: successfully
-   */
+    * generate global dictionary with SQLContext and CarbonLoadModel
+    *
+    * @param sqlContext
+    * @param carbonLoadModel
+    * @return a integer 1: successfully
+    */
   def generateGlobalDictionary(sqlContext: SQLContext,
                                carbonLoadModel: CarbonLoadModel,
                                hdfsLocation: String,
@@ -335,7 +260,8 @@ object GlobalDictionaryUtil extends Logging {
       }
       //columns which need to generate global dictionary file
       val carbonTable = carbonLoadModel.getCarbonDataLoadSchema.getCarbonTable
-      val (requireColumns, requireColumnIds) = pruneDimensions(carbonTable.getDimensionByTableName(carbonTable.getFactTableName).map(x=>x).toArray, df.columns)
+      val (requireColumns, requireColumnIds) = pruneDimensions(carbonTable.getDimensionByTableName(
+        carbonTable.getFactTableName).map(x => x).toArray, df.columns)
       if (requireColumns.size >= 1) {
         //select column to push down pruning
         df = df.select(requireColumns.head, requireColumns.tail: _*)
@@ -378,5 +304,58 @@ object GlobalDictionaryUtil extends Logging {
         throw ex
     }
     rtn
+  }
+
+  /**
+    * load CSV files to DataFrame by using datasource "com.databricks.spark.csv"
+    *
+    * @param sqlContext SQLContext
+    * @param filePath   file or directory path
+    * @return: org.apache.spark.sql.DataFrame
+    */
+  private def loadDataFrame(sqlContext: SQLContext, filePath: String): DataFrame = {
+    val df = new SQLContext(sqlContext.sparkContext).read
+      .format("com.databricks.spark.csv")
+      .option("header", "true")
+      .option("comment", null)
+      .load(getPaths(filePath))
+    df
+  }
+
+  /**
+    * check whether global dictionary have been generated successfully or not.
+    *
+    * @param status Array[(String, String)]
+    * @return: void
+    */
+  private def checkStatus(status: Array[(String, String)]) = {
+    if (status.exists(x => CarbonCommonConstants.STORE_LOADSTATUS_FAILURE.equals(x._2))) {
+      logError("generate global dictionary files failed")
+      throw new Exception("Failed to generate global dictionary files")
+    } else {
+      logInfo("generate global dictionary successfully")
+    }
+  }
+
+  /**
+    * extract dimension set from hierarchy
+    *
+    * @param schema
+    * @return: scala.collection.mutable.HashSet<java.lang.String>
+    */
+  private def extractHierachyDimension(schema: Schema): HashSet[String] = {
+    val dimensionSet = new HashSet[String]
+    val dimensions = schema.cubes(0).dimensions
+    for (i <- 0 until dimensions.length) {
+      val hierarchies = dimensions(i).getDimension(schema).hierarchies
+      for (hierachy <- hierarchies) {
+        if (hierachy.relation != null) {
+          for (level <- hierachy.levels) {
+            dimensionSet += level.column
+          }
+        }
+      }
+    }
+    dimensionSet
   }
 }
