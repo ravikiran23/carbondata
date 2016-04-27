@@ -77,6 +77,11 @@ public class ZooKeeperLockingTest {
     };
 
     ZooKeeperLocking zkl = new ZooKeeperLocking(LockUsage.METADATA_LOCK);
+	try {
+      Thread.sleep(1000);
+    } catch (InterruptedException e) {
+      Assert.assertTrue(false);
+    }
     Assert.assertTrue(zkl.lock());
 
     ZooKeeperLocking zk2 = new ZooKeeperLocking(LockUsage.METADATA_LOCK);
