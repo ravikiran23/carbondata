@@ -3,6 +3,7 @@
  */
 package org.carbondata.core.locks;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Properties;
@@ -10,6 +11,7 @@ import java.util.Properties;
 import org.carbondata.core.util.CarbonProperties;
 
 import mockit.NonStrictExpectations;
+
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
@@ -30,7 +32,7 @@ public class ZooKeeperLockingTest {
    */
   @Before public void setUp() throws Exception {
     Properties startupProperties = new Properties();
-    startupProperties.setProperty("dataDir", "D:/temp");
+    startupProperties.setProperty("dataDir", (new File(".").getAbsolutePath()));
     freePort = findFreePort();
     startupProperties.setProperty("clientPort", "" + freePort);
     QuorumPeerConfig quorumConfiguration = new QuorumPeerConfig();
@@ -68,7 +70,7 @@ public class ZooKeeperLockingTest {
     new NonStrictExpectations(cp) {
       {
         cp.getProperty("/Carbon/locks");
-        result = "/carbon/tests";
+        result = "/carbontests";
         cp.getProperty("spark.deploy.zookeeper.url");
         result = "127.0.0.1:" + freePort;
       }
