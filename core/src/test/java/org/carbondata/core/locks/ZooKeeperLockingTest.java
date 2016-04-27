@@ -98,7 +98,6 @@ public class ZooKeeperLockingTest {
       socket = new ServerSocket(0);
       socket.setReuseAddress(true);
       int port = socket.getLocalPort();
-    //  System.out.println(port);
       try {
         socket.close();
       } catch (IOException e) {
