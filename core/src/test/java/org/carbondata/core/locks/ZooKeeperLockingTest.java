@@ -69,7 +69,7 @@ public class ZooKeeperLockingTest {
     final CarbonProperties cp = CarbonProperties.getInstance();
     new NonStrictExpectations(cp) {
       {
-        cp.getProperty("/Carbon/locks");
+        cp.getProperty("/CarbonLocks");
         result = "/carbontests";
         cp.getProperty("spark.deploy.zookeeper.url");
         result = "127.0.0.1:" + freePort;
@@ -98,7 +98,7 @@ public class ZooKeeperLockingTest {
       socket = new ServerSocket(0);
       socket.setReuseAddress(true);
       int port = socket.getLocalPort();
-      System.out.println(port);
+    //  System.out.println(port);
       try {
         socket.close();
       } catch (IOException e) {
