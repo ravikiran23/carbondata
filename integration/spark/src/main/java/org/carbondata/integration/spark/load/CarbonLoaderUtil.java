@@ -369,7 +369,8 @@ public final class CarbonLoaderUtil {
   }
 
   public static List<String> getListOfValidSlices(LoadMetadataDetails[] details) {
-    List<String> activeSlices = new ArrayList<>(CarbonCommonConstants.DEFAULT_COLLECTION_SIZE);
+    List<String> activeSlices =
+        new ArrayList<String>(CarbonCommonConstants.DEFAULT_COLLECTION_SIZE);
     for (LoadMetadataDetails oneLoad : details) {
       if (CarbonCommonConstants.STORE_LOADSTATUS_SUCCESS.equals(oneLoad.getLoadStatus())
           || CarbonCommonConstants.STORE_LOADSTATUS_PARTIAL_SUCCESS.equals(oneLoad.getLoadStatus())
@@ -387,7 +388,8 @@ public final class CarbonLoaderUtil {
   }
 
   public static List<String> getListOfUpdatedSlices(LoadMetadataDetails[] details) {
-    List<String> updatedSlices = new ArrayList<>(CarbonCommonConstants.DEFAULT_COLLECTION_SIZE);
+    List<String> updatedSlices =
+        new ArrayList<String>(CarbonCommonConstants.DEFAULT_COLLECTION_SIZE);
     for (LoadMetadataDetails oneLoad : details) {
       if (CarbonCommonConstants.MARKED_FOR_UPDATE.equals(oneLoad.getLoadStatus())) {
         if (null != oneLoad.getMergedLoadName()) {
@@ -1050,21 +1052,23 @@ public final class CarbonLoaderUtil {
       Map<TableBlockInfo, List<String>> blockNodes, int numberOfBlocks, int numberOfNodes) {
 
     Map<String, List<TableBlockInfo>> outputMap =
-        new HashMap<>(CarbonCommonConstants.DEFAULT_COLLECTION_SIZE);
+        new HashMap<String, List<TableBlockInfo>>(CarbonCommonConstants.DEFAULT_COLLECTION_SIZE);
 
     int blocksPerNode = numberOfBlocks / numberOfNodes;
 
     List<NodeBlockRelation> flattenedList =
-        new ArrayList<>(CarbonCommonConstants.DEFAULT_COLLECTION_SIZE);
+        new ArrayList<NodeBlockRelation>(CarbonCommonConstants.DEFAULT_COLLECTION_SIZE);
 
-    Set<TableBlockInfo> uniqueBlocks = new HashSet<>(CarbonCommonConstants.DEFAULT_COLLECTION_SIZE);
+    Set<TableBlockInfo> uniqueBlocks =
+        new HashSet<TableBlockInfo>(CarbonCommonConstants.DEFAULT_COLLECTION_SIZE);
 
     createFlattenedListFromMap(blockNodes, flattenedList, uniqueBlocks);
     // sort the flattened data.
     Collections.sort(flattenedList);
 
     Map<String, List<TableBlockInfo>> nodeAndBlockMapping =
-        new LinkedHashMap<>(CarbonCommonConstants.DEFAULT_COLLECTION_SIZE);
+        new LinkedHashMap<String, List<TableBlockInfo>>(
+            CarbonCommonConstants.DEFAULT_COLLECTION_SIZE);
 
     // from the flattened list create a mapping of node vs Data blocks.
     createNodeVsBlockMapping(flattenedList, nodeAndBlockMapping);
@@ -1130,7 +1134,7 @@ public final class CarbonLoaderUtil {
             List<TableBlockInfo> list;
             if (null == outputMap.get(entry.getKey())) {
 
-              list = new ArrayList<>(CarbonCommonConstants.DEFAULT_COLLECTION_SIZE);
+              list = new ArrayList<TableBlockInfo>(CarbonCommonConstants.DEFAULT_COLLECTION_SIZE);
               list.add(block);
               outputMap.put(entry.getKey(), list);
 
@@ -1163,7 +1167,7 @@ public final class CarbonLoaderUtil {
       List<TableBlockInfo> list;
 
       if (null == nodeAndBlockMapping.get(node)) {
-        list = new ArrayList<>(CarbonCommonConstants.DEFAULT_COLLECTION_SIZE);
+        list = new ArrayList<TableBlockInfo>(CarbonCommonConstants.DEFAULT_COLLECTION_SIZE);
         list.add(nbr.getBlock());
         Collections.sort(list);
         nodeAndBlockMapping.put(node, list);

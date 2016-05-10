@@ -22,7 +22,7 @@ public class CarbonLoaderUtilTest {
    */
   @Test public void nodeBlockMapping() throws Exception {
 
-    Map<TableBlockInfo, List<String>> inputMap = new HashMap<>(5);
+    Map<TableBlockInfo, List<String>> inputMap = new HashMap<TableBlockInfo, List<String>>(5);
 
     TableBlockInfo block1 = new TableBlockInfo("path1", 123, 1, new String[] { "sdf" }, 111);
     TableBlockInfo block2 = new TableBlockInfo("path2", 123, 2, new String[] { "sdf" }, 111);
@@ -106,7 +106,7 @@ public class CarbonLoaderUtilTest {
    */
   @Test public void nodeBlockMappingTestWith5blocks3nodes() throws Exception {
 
-    Map<TableBlockInfo, List<String>> inputMap = new HashMap<>(5);
+    Map<TableBlockInfo, List<String>> inputMap = new HashMap<TableBlockInfo, List<String>>(5);
 
     TableBlockInfo block1 =
         new TableBlockInfo("part-0-0-1462341987000", 123, 1, new String[] { "sdf" }, 111);
@@ -145,7 +145,7 @@ public class CarbonLoaderUtilTest {
    */
   @Test public void nodeBlockMappingTestWith6Blocks4nodes() throws Exception {
 
-    Map<TableBlockInfo, List<String>> inputMap = new HashMap<>(5);
+    Map<TableBlockInfo, List<String>> inputMap = new HashMap<TableBlockInfo, List<String>>(5);
 
     TableBlockInfo block1 =
         new TableBlockInfo("part-0-0-1462341987000", 123, 1, new String[] { "sdf" }, 111);
@@ -207,7 +207,7 @@ public class CarbonLoaderUtilTest {
    */
   @Test public void nodeBlockMappingTestWith10Blocks4nodes() throws Exception {
 
-    Map<TableBlockInfo, List<String>> inputMap = new HashMap<>(5);
+    Map<TableBlockInfo, List<String>> inputMap = new HashMap<TableBlockInfo, List<String>>(5);
 
     TableBlockInfo block1 =
         new TableBlockInfo("part-1-0-1462341987000", 123, 1, new String[] { "sdf" }, 111);
@@ -230,34 +230,34 @@ public class CarbonLoaderUtilTest {
     TableBlockInfo block10 =
         new TableBlockInfo("part-10-0-1462341987000", 123, 4, new String[] { "sdf" }, 111);
 
-    List<String> list1 = new ArrayList<>(3);
+    List<String> list1 = new ArrayList<String>(3);
     list1.add("2");
     list1.add("4");
-    List<String> list2 = new ArrayList(3);
+    List<String> list2 = new ArrayList<String>(3);
     list2.add("2");
     list2.add("4");
-    List<String> list3 = new ArrayList(3);
+    List<String> list3 = new ArrayList<String>(3);
     list3.add("2");
     list3.add("4");
-    List<String> list4 = new ArrayList(3);
+    List<String> list4 = new ArrayList<String>(3);
     list4.add("2");
     list4.add("4");
-    List<String> list5 = new ArrayList(3);
+    List<String> list5 = new ArrayList<String>(3);
     list5.add("2");
     list5.add("4");
-    List<String> list6 = new ArrayList(3);
+    List<String> list6 = new ArrayList<String>(3);
     list6.add("2");
     list6.add("4");
-    List<String> list7 = new ArrayList(3);
+    List<String> list7 = new ArrayList<String>(3);
     list7.add("3");
     list7.add("4");
-    List<String> list8 = new ArrayList(3);
+    List<String> list8 = new ArrayList<String>(3);
     list8.add("3");
     list8.add("4");
-    List<String> list9 = new ArrayList(3);
+    List<String> list9 = new ArrayList<String>(3);
     list9.add("3");
     list9.add("4");
-    List<String> list10 = new ArrayList(3);
+    List<String> list10 = new ArrayList<String>(3);
     list10.add("1");
     list10.add("4");
 
