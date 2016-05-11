@@ -24,10 +24,10 @@ public class CarbonLoaderUtilTest {
 
     Map<TableBlockInfo, List<String>> inputMap = new HashMap<TableBlockInfo, List<String>>(5);
 
-    TableBlockInfo block1 = new TableBlockInfo("path1", 123, 1, new String[] { "sdf" }, 111);
-    TableBlockInfo block2 = new TableBlockInfo("path2", 123, 2, new String[] { "sdf" }, 111);
-    TableBlockInfo block3 = new TableBlockInfo("path3", 123, 3, new String[] { "sdf" }, 111);
-    TableBlockInfo block4 = new TableBlockInfo("path4", 123, 4, new String[] { "sdf" }, 111);
+    TableBlockInfo block1 = new TableBlockInfo("path1", 123, "1", new String[] { "sdf" }, 111);
+    TableBlockInfo block2 = new TableBlockInfo("path2", 123, "2", new String[] { "sdf" }, 111);
+    TableBlockInfo block3 = new TableBlockInfo("path3", 123, "3", new String[] { "sdf" }, 111);
+    TableBlockInfo block4 = new TableBlockInfo("path4", 123, "4", new String[] { "sdf" }, 111);
 
     List<String> list1 = new ArrayList(3);
     list1.add("1");
@@ -109,15 +109,15 @@ public class CarbonLoaderUtilTest {
     Map<TableBlockInfo, List<String>> inputMap = new HashMap<TableBlockInfo, List<String>>(5);
 
     TableBlockInfo block1 =
-        new TableBlockInfo("part-0-0-1462341987000", 123, 1, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-0-0-1462341987000", 123, "1", new String[] { "sdf" }, 111);
     TableBlockInfo block2 =
-        new TableBlockInfo("part-1-0-1462341987000", 123, 2, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-1-0-1462341987000", 123, "2", new String[] { "sdf" }, 111);
     TableBlockInfo block3 =
-        new TableBlockInfo("part-2-0-1462341987000", 123, 3, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-2-0-1462341987000", 123, "3", new String[] { "sdf" }, 111);
     TableBlockInfo block4 =
-        new TableBlockInfo("part-3-0-1462341987000", 123, 4, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-3-0-1462341987000", 123, "4", new String[] { "sdf" }, 111);
     TableBlockInfo block5 =
-        new TableBlockInfo("part-4-0-1462341987000", 123, 5, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-4-0-1462341987000", 123, "5", new String[] { "sdf" }, 111);
 
     List<String> list1 = new ArrayList(3);
     list1.add("1");
@@ -148,17 +148,17 @@ public class CarbonLoaderUtilTest {
     Map<TableBlockInfo, List<String>> inputMap = new HashMap<TableBlockInfo, List<String>>(5);
 
     TableBlockInfo block1 =
-        new TableBlockInfo("part-0-0-1462341987000", 123, 1, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-0-0-1462341987000", 123, "1", new String[] { "sdf" }, 111);
     TableBlockInfo block2 =
-        new TableBlockInfo("part-1-0-1462341987000", 123, 2, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-1-0-1462341987000", 123, "2", new String[] { "sdf" }, 111);
     TableBlockInfo block3 =
-        new TableBlockInfo("part-2-0-1462341987000", 123, 3, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-2-0-1462341987000", 123, "3", new String[] { "sdf" }, 111);
     TableBlockInfo block4 =
-        new TableBlockInfo("part-3-0-1462341987000", 123, 4, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-3-0-1462341987000", 123, "4", new String[] { "sdf" }, 111);
     TableBlockInfo block5 =
-        new TableBlockInfo("part-4-0-1462341987000", 123, 4, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-4-0-1462341987000", 123, "5", new String[] { "sdf" }, 111);
     TableBlockInfo block6 =
-        new TableBlockInfo("part-5-0-1462341987000", 123, 4, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-5-0-1462341987000", 123, "6", new String[] { "sdf" }, 111);
 
     List<String> list1 = new ArrayList(3);
     list1.add("1");
@@ -210,25 +210,25 @@ public class CarbonLoaderUtilTest {
     Map<TableBlockInfo, List<String>> inputMap = new HashMap<TableBlockInfo, List<String>>(5);
 
     TableBlockInfo block1 =
-        new TableBlockInfo("part-1-0-1462341987000", 123, 1, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-1-0-1462341987000", 123, "1", new String[] { "sdf" }, 111);
     TableBlockInfo block2 =
-        new TableBlockInfo("part-2-0-1462341987000", 123, 2, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-2-0-1462341987000", 123, "2", new String[] { "sdf" }, 111);
     TableBlockInfo block3 =
-        new TableBlockInfo("part-3-0-1462341987000", 123, 3, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-3-0-1462341987000", 123, "3", new String[] { "sdf" }, 111);
     TableBlockInfo block4 =
-        new TableBlockInfo("part-4-0-1462341987000", 123, 4, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-4-0-1462341987000", 123, "4", new String[] { "sdf" }, 111);
     TableBlockInfo block5 =
-        new TableBlockInfo("part-5-0-1462341987000", 123, 4, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-5-0-1462341987000", 123, "5", new String[] { "sdf" }, 111);
     TableBlockInfo block6 =
-        new TableBlockInfo("part-6-0-1462341987000", 123, 4, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-6-0-1462341987000", 123, "6", new String[] { "sdf" }, 111);
     TableBlockInfo block7 =
-        new TableBlockInfo("part-7-0-1462341987000", 123, 4, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-7-0-1462341987000", 123, "7", new String[] { "sdf" }, 111);
     TableBlockInfo block8 =
-        new TableBlockInfo("part-8-0-1462341987000", 123, 4, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-8-0-1462341987000", 123, "8", new String[] { "sdf" }, 111);
     TableBlockInfo block9 =
-        new TableBlockInfo("part-9-0-1462341987000", 123, 4, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-9-0-1462341987000", 123, "9", new String[] { "sdf" }, 111);
     TableBlockInfo block10 =
-        new TableBlockInfo("part-10-0-1462341987000", 123, 4, new String[] { "sdf" }, 111);
+        new TableBlockInfo("part-10-0-1462341987000", 123, "9", new String[] { "sdf" }, 111);
 
     List<String> list1 = new ArrayList<String>(3);
     list1.add("2");
