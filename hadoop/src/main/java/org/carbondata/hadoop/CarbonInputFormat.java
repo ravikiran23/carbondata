@@ -210,7 +210,7 @@ public class CarbonInputFormat<T> extends FileInputFormat<Void, T> {
         new AbsoluteTableIdentifier(getStorePathString(job), getTableToAccess(job));
 
     //for each segment fetch blocks matching filter in Driver BTree
-    for (int segmentNo : getValidSegments(job)) {
+    for (String segmentNo : getValidSegments(job)) {
       Map<String, AbstractIndex> segmentIndexMap =
           getSegmentAbstractIndexs(job, absoluteTableIdentifier, segmentNo);
 
@@ -272,7 +272,7 @@ public class CarbonInputFormat<T> extends FileInputFormat<Void, T> {
   }
 
   private Map<String, AbstractIndex> getSegmentAbstractIndexs(JobContext job,
-      AbsoluteTableIdentifier absoluteTableIdentifier, int segmentId)
+      AbsoluteTableIdentifier absoluteTableIdentifier, String segmentId)
       throws IOException, IndexBuilderException {
     Map<String, AbstractIndex> segmentIndexMap = SegmentTaskIndexStore.getInstance()
         .getSegmentBTreeIfExists(absoluteTableIdentifier, segmentId);
@@ -451,7 +451,7 @@ public class CarbonInputFormat<T> extends FileInputFormat<Void, T> {
     String segmentString = job.getConfiguration().get(INPUT_SEGMENT_NUMBERS, "");
     // if no segments
     if(segmentString.trim().isEmpty()){
-      return new int[0];
+      return new String[0];
     }
 
     String[] segments = segmentString.split(",");
